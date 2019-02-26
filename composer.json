@@ -1,0 +1,22 @@
+{
+  "name": "abbadon1334/atk4-session",
+  "description": "php session using atk4 persistence",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Francesco Danti",
+      "email": "fdanti@gmail.com"
+    }
+  ],
+  "require": {
+    "atk4/data": "^1.4",
+    "atk4/schema": "^1.1",
+    "php": "^7.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "atk4\\DBSession\\": "src"
+    }
+  }
+}
