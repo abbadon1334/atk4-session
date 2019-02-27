@@ -49,11 +49,11 @@ class SessionController implements \SessionHandlerInterface
     {
         $this->session_model = new SessionModel($p);
         
-        session_set_save_handler($this,false);
-    
+        session_set_save_handler($this, false);
+        
         @session_start();
         
-        register_shutdown_function(function() {
+        register_shutdown_function(function () {
             session_commit();
         });
     }
@@ -90,13 +90,13 @@ class SessionController implements \SessionHandlerInterface
      * @return string
      * @since 5.5.1
      */
-//    public function create_sid()
-//    {
-//        d(__METHOD__);
-//        $sid = parent::create_sid();
-//        d($sid);
-//        return $sid;
-//    }
+    //    public function create_sid()
+    //    {
+    //        d(__METHOD__);
+    //        $sid = parent::create_sid();
+    //        d($sid);
+    //        return $sid;
+    //    }
     
     /**
      * Destroy a session
@@ -109,9 +109,20 @@ class SessionController implements \SessionHandlerInterface
      * @param string $session_id The session ID being destroyed.
      *
      * @return bool
+     * @throws \atk4\data\Exception
      */
     public function destroy($session_id)
     {
+        if (is_null($this->session_model)) {
+            return;
+        }
+        
+        if (!$this->session_model->loaded()) {
+            return;
+        }
+        
+        $this->session_model->delete();
+        
         return true;
     }
     
@@ -130,9 +141,18 @@ class SessionController implements \SessionHandlerInterface
      * @param int $maxlifetime
      *
      * @return bool
+     * @throws \atk4\data\Exception
      */
     public function gc($maxlifetime)
     {
+        $m = $this->session_model->newInstance();
+        $m->addCondition($m->expr('[stamp]+[] < NOW()', $maxlifetime));
+        
+        foreach ($m as $m_record) {
+            $m_record->delete();
+        }
+        
+        return true;
     }
     
     /**
@@ -217,7 +237,7 @@ class SessionController implements \SessionHandlerInterface
     public function write($session_id, $session_data)
     {
         $this->session_model->set('data', $session_data);
-        $this->session_model->set('timestamp', new \DateTime());
+        $this->session_model->set('stamp', (new \DateTime())->format('Y-m-d H:i:s'));
         $this->session_model->save();
         
         return true;
@@ -237,11 +257,11 @@ class SessionController implements \SessionHandlerInterface
      *
      * @return bool
      */
-
-//    public function updateTimestamp($sessionId, $sessionData)
-//    {
-//        d(__METHOD__, [func_get_args()]);
-//    }
+    
+    //    public function updateTimestamp($sessionId, $sessionData)
+    //    {
+    //        d(__METHOD__, [func_get_args()]);
+    //    }
     
     /**
      * return value should be true if the session id is valid otherwise false if false is returned a new session id
@@ -251,15 +271,9 @@ class SessionController implements \SessionHandlerInterface
      *
      * @return bool|void
      */
-//    public function validateId($sessionId)
-//    {
-//        d(__METHOD__, [func_get_args()]);
-//    }
-
+    //    public function validateId($sessionId)
+    //    {
+    //        d(__METHOD__, [func_get_args()]);
+    //    }
     
-    public function getModelData()
-    {
-        return $this->session_model->get();
-    }
-
 }

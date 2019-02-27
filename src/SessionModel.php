@@ -39,7 +39,7 @@ class SessionModel extends \atk4\data\Model
         $this->addFields([
             ['session_id'   ,'type' => 'string'],
             ['data'         ,'type' => 'text'], // < === must be text or other big data table
-            ['timestamp'    ,'type' => 'datetime']
+            ['stamp'    ,'type' => 'datetime']
         ]);
     }
 }
