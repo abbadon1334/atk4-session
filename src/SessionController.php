@@ -26,7 +26,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace atk4\DBSession;
+namespace atk4\ATK4DBSession;
 
 class SessionController implements \SessionHandlerInterface
 {
@@ -112,6 +112,7 @@ class SessionController implements \SessionHandlerInterface
      */
     public function destroy($session_id)
     {
+        return true;
     }
     
     /**
@@ -255,5 +256,10 @@ class SessionController implements \SessionHandlerInterface
 //        d(__METHOD__, [func_get_args()]);
 //    }
 
+    
+    public function getModelData()
+    {
+        return $this->session_model->get();
+    }
 
 }

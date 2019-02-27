@@ -1,8 +1,8 @@
 {
-  "name": "abbadon1334/atk4-session",
-  "description": "php session using atk4 persistence",
+  "name": "abbadon1334/atk4dbsession",
+  "description": "php session using atk4 data handler",
   "minimum-stability": "stable",
-  "license": "MIT",
+  "license": "proprietary",
   "authors": [
     {
       "name": "Francesco Danti",
@@ -11,12 +11,17 @@
   ],
   "require": {
     "atk4/data": "^1.4",
-    "atk4/schema": "^1.1",
-    "php": "^7.*"
+    "atk4/schema": "^1.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "<6",
+    "phpunit/dbunit": ">=1.2",
+    "phpunit/phpcov": "*",
+    "codeclimate/php-test-reporter": "*"
   },
   "autoload": {
     "psr-4": {
-      "atk4\\DBSession\\": "src"
+      "atk4\\ATK4DBSession\\": "src"
     }
   }
 }

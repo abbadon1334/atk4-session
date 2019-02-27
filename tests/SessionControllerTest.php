@@ -26,20 +26,41 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace atk4\ATK4DBSession;
+/**
+ * Created by PhpStorm.
+ * User: abbadon1334
+ * Date: 2/27/19
+ * Time: 1:53 AM
+ */
 
-class SessionModel extends \atk4\data\Model
+use atk4\ATK4DBSession\SessionController;
+
+class SessionControllerTest extends PHPUnit_Framework_TestCase
 {
-    public $table = 'session';
+    public $session;
     
-    public function init()
+    protected function setUp()
     {
-        parent::init();
         
-        $this->addFields([
-            ['session_id'   ,'type' => 'string'],
-            ['data'         ,'type' => 'text'], // < === must be text or other big data table
-            ['timestamp'    ,'type' => 'datetime']
-        ]);
+    }
+    
+    protected function tearDown()
+    {
+        
+    }
+    
+    public function testOpen()
+    {
+        
+    }
+    
+    public function testWrite()
+    {
+        
+    }
+    
+    public function testCheckWrite()
+    {
+    
     }
 }
