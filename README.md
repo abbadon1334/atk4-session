@@ -9,7 +9,7 @@ initialize *session handler*
 include '../vendor/autoload.php';
 
 // create pesistence
-$db = \atk4\data\Persistence::connect('mysql://root:root@localhost/test');
+$db = \atk4\data\Persistence::connect('mysql://root:password@localhost/atk4');
 
 // init session handler
 new \atk4\ATK4DBSession\SessionController($p);
