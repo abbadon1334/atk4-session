@@ -32,18 +32,17 @@ CREATE TABLE `session` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 ```
 
-Session handler will work as a normal PHP Session but in place of saving using file it'll use atk4\data\Persistence
+Session handler will function like a normal PHP session but will use atk4\data\Persistence instead of files.
 
 It's clearly a shame to have file locking on things that are usually static, like nowadays sessions.
 
-Every call that use sessions call a file an set a lock on it to prevent race conditions.
+Every call that use sessions read a file and set a lock on it to prevent race conditions until release or output.
 
-You'll have for sure race conditions, BUT what race condition can be if you have only an ID in $_SESSION and that is nearly immutable after login.
+A good article speaking about the problem [link](https://ma.ttias.be/php-session-locking-prevent-sessions-blocking-in-requests/)
 
-In atk4 where async calls are massively used, this problem is much more evident.
+Using an alternative you'll have for sure race conditions, BUT what race condition can be if you, usually, have only an ID in $_SESSION and that is nearly immutable from login to logout.
 
-a good article speaking about the problem [link](https://ma.ttias.be/php-session-locking-prevent-sessions-blocking-in-requests/)
-
+In atk4\ui where async calls are massively used, this problem is much more evident.
 
 You can add it without breaking your project, it already works but is missing PHPUnit ( some problem to check sessions ) and a good Garbage Collector.  
 
