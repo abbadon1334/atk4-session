@@ -351,7 +351,7 @@ class SessionController implements \SessionHandlerInterface
     {
         $now = new \DateTime();
         $expire = clone $now;
-        $expire->modify('+' . $this->gc_maxlifetime .' SECONDS');
+        $expire->modify('+' . $this->gc_expire .' SECONDS');
 
         $this->session_model['data'] = $session_data;
         $this->session_model['updated'] = $now;
