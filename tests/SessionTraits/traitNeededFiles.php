@@ -26,22 +26,35 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace atk4\ATK4DBSession;
+namespace atk4\ATK4DBSession\tests\SessionTraits;
 
-class SessionModel extends \atk4\data\Model
+trait traitNeededFiles
 {
-    public $table = 'session';
-    public $id_field = 'id';
-    
-    public function init()
+    protected  static function getNeededFiles()
     {
-        parent::init();
-        
-        $this->addFields([
-            ['session_id'   ,'type' => 'string'],
-            ['data'         ,'type' => 'text'], // < === must be text or other big data table
-            ['expire'       ,'type' => 'datetime'],
-            ['updated'      ,'type' => 'datetime']
-        ]);
+        return [];
+    }
+    
+    protected static function createNeededFiles()
+    {
+        foreach(static::getNeededFiles() as $file)
+        {
+            if(!file_exists($file))
+            {
+                @touch($file);
+                @chmod($file, 0777);
+            }
+        }
+    }
+    
+    protected static function removeNeededFiles()
+    {
+        foreach(static::getNeededFiles() as $file)
+        {
+            if (file_exists($file))
+            {
+                @unlink($file);
+            }
+        }
     }
 }

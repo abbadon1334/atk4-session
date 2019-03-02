@@ -26,22 +26,47 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace atk4\ATK4DBSession;
+namespace atk4\ATK4DBSession\tests\SessionTraits;
 
-class SessionModel extends \atk4\data\Model
+trait traitPhpServerProcess
 {
-    public $table = 'session';
-    public $id_field = 'id';
-    
-    public function init()
+    use traitBackgroundProcess;
+
+    protected static function getCommand()
     {
-        parent::init();
-        
-        $this->addFields([
-            ['session_id'   ,'type' => 'string'],
-            ['data'         ,'type' => 'text'], // < === must be text or other big data table
-            ['expire'       ,'type' => 'datetime'],
-            ['updated'      ,'type' => 'datetime']
-        ]);
+        return self::getPhpServerCommand();
+    }
+
+    protected static function getPhpServerCommand()
+    {
+        $rootDir = self::getPhpServerOption('root_dir');
+        $router = self::getPhpServerOption('router');
+        $host = self::getPhpServerOption('host', 'localhost');
+        $port = self::getPhpServerOption('port', 8000);
+
+        return sprintf(
+            'php -S %s:%d%s%s',
+            $host,
+            $port,
+            $rootDir ? ' -t '.$rootDir : '',
+            $router ? ' '.$router : ''
+        );
+    }
+
+    protected static function getPhpServerOptions()
+    {
+        return [
+            'host' => 'localhost',
+            'port' => 8000,
+            'root_dir' => null,
+            'router' => null
+        ];
+    }
+
+    private static function getPhpServerOption($option, $default = null)
+    {
+        $options = self::getPhpServerOptions();
+
+        return array_key_exists($option, $options) ? $options[$option] : $default;
     }
 }

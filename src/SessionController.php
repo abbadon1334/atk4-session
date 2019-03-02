@@ -30,13 +30,14 @@ namespace atk4\ATK4DBSession;
 
 class SessionController implements \SessionHandlerInterface
 {
-    
     /**
-     * _SESSION id
+     * Za Session id
      *
      * @var string
      */
     private $session_id = null;
+
+    private $session_id_prefix = 'atk4';
     
     /**
      * Model used for Session
@@ -44,20 +45,80 @@ class SessionController implements \SessionHandlerInterface
      * @var atk4\DBSession\DBSessionModel
      */
     private $session_model;
+
+    /**
+     * Persistence
+     *
+     * @var atk4\data\Persistence
+     */
+    private $persistence;
     
-    public function __construct($p)
+    /**
+     * Max lifetime of a session before expire
+     *
+     * @var float
+     */
+    private $gc_expire = 60 * 60; // one hour
+    
+    /**
+     * Percentage of triggering gc
+     *
+     * @var float
+     */
+    private $gc_trigger = 1 / 1000; // gc trigger 1 over 1000 request
+    
+    /**
+     * SessionController constructor.
+     *
+     * @param \atk4\data\Persistence    $p                      atk4 data persistence
+     * @param int                       $gc_maxlifetime         seconds until session expire
+     * @param float                     $gc_probability         probability of gc for expired sessions
+     * @param array                     $php_session_options    options for session_start
+     */
+    public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
     {
-        $this->session_model = new SessionModel($p);
-        
-        session_set_save_handler($this, false);
-        
-        @session_start();
-        
-        register_shutdown_function(function () {
-            session_commit();
-        });
-    }
+        $this->gc_expire  = $gc_maxlifetime?:$this->gc_expire;
+        $this->gc_trigger = $gc_probability?:$this->gc_trigger;
     
+        // calculate the number to be used later in random function;
+        $this->gc_trigger = pow(10, strlen($this->gc_trigger) - (strpos($this->gc_trigger, '.') + 1));
+        
+        $this->persistence = $p;
+
+        $this->session_model = new SessionModel($this->persistence);
+    
+        session_set_save_handler (
+            [$this,'open'],
+            [$this,'close'] ,
+            [$this,'read'] ,
+            [$this,'write'] ,
+            [$this,'destroy'] ,
+            [$this,'gc'] ,
+            [$this,'create_sid'] ,
+            [$this,'validateId'] ,
+            [$this,'updateTimestamp']
+        );
+        
+        register_shutdown_function( 'session_write_close' );
+
+        switch (session_status())
+        {
+            case PHP_SESSION_DISABLED:
+                // @codeCoverageIgnoreStart - impossible to test
+                throw new Exception(['Sessions are disabled on server']);
+                // @codeCoverageIgnoreEnd
+            break;
+
+            case PHP_SESSION_NONE:
+                session_start($php_session_options);
+            break;
+
+            default:
+                throw new Exception('session already started, cannot start Session Handler');
+            break;
+        }
+    }
+
     /**
      * Close the session
      *
@@ -90,13 +151,67 @@ class SessionController implements \SessionHandlerInterface
      * @return string
      * @since 5.5.1
      */
-    //    public function create_sid()
-    //    {
-    //        d(__METHOD__);
-    //        $sid = parent::create_sid();
-    //        d($sid);
-    //        return $sid;
-    //    }
+    public function create_sid()
+    {
+        $sid = [$this->session_id_prefix];
+        $sid[] = $this->create_sid_part();
+        $sid[] = $this->create_sid_part();
+        $sid[] = $this->create_sid_part();
+        $sid[] = $this->create_sid_part();
+        $sid[] = $this->create_sid_part();
+
+        return implode('-',$sid);
+    }
+    
+    /**
+     * Create an hard guessing sid with a UUID structure but with variable chunk length
+     * ex :
+     * [prefix][chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]
+     *
+     * @return string
+     * @throws \Exception
+     */
+    private function create_sid_part()
+    {
+        $desired_output_length = rand(4,12);
+        $bits_per_character = 5;
+
+        $bytes_needed = ceil($desired_output_length * $bits_per_character / 8);
+        $random_input_bytes = random_bytes($bytes_needed);
+       
+        // The below is translated from function bin_to_readable in the PHP source (ext/session/session.c)
+        static $hexconvtab = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,-';
+       
+        $out = '';
+       
+        $p = 0;
+        $q = strlen($random_input_bytes);
+        $w = 0;
+        $have = 0;
+       
+        $mask = (1 << $bits_per_character) - 1;
+    
+        $chars_remaining = $desired_output_length;
+        while ($chars_remaining--) {
+            if ($have < $bits_per_character) {
+                if ($p < $q) {
+                    $byte = ord( $random_input_bytes[$p++] );
+                    $w |= ($byte << $have);
+                    $have += 8;
+                } else {
+                    // Should never happen. Input must be large enough.
+                    break;
+                }
+            }
+    
+            // consume $bits_per_character bits
+            $out .= $hexconvtab[$w & $mask];
+            $w >>= $bits_per_character;
+            $have -= $bits_per_character;
+        }
+    
+        return $out;
+    }
     
     /**
      * Destroy a session
@@ -113,15 +228,12 @@ class SessionController implements \SessionHandlerInterface
      */
     public function destroy($session_id)
     {
-        if (is_null($this->session_model)) {
-            return;
+        $this->session_model->tryLoadBy('session_id',$session_id);
+
+        if($this->session_model->loaded())
+        {
+            $this->session_model->delete();
         }
-        
-        if (!$this->session_model->loaded()) {
-            return;
-        }
-        
-        $this->session_model->delete();
         
         return true;
     }
@@ -146,8 +258,8 @@ class SessionController implements \SessionHandlerInterface
     public function gc($maxlifetime)
     {
         $m = $this->session_model->newInstance();
-        $m->addCondition($m->expr('[stamp]+[] < NOW()', $maxlifetime));
-        
+        $m->addCondition($m->expr('[expire] < []',(new \DateTime())->format('Y-m-d H:i:s')));
+    
         foreach ($m as $m_record) {
             $m_record->delete();
         }
@@ -174,6 +286,10 @@ class SessionController implements \SessionHandlerInterface
      */
     public function open($save_path, $session_name)
     {
+        if(rand(0,$this->gc_trigger) === $this->gc_trigger) {
+            $this->gc($this->gc_expire);
+        }
+    
         return true;
     }
     
@@ -201,13 +317,10 @@ class SessionController implements \SessionHandlerInterface
     public function read($session_id)
     {
         $this->session_model->tryLoadBy('session_id', $session_id);
+    
+        $is_loaded = $this->session_model->loaded();
         
-        // if not present must return an empty string.
-        if (!$this->session_model->loaded()) {
-            return '';
-        }
-        
-        return $this->session_model->get('data');
+        return (string) $this->session_model->get('data');
     }
     
     /**
@@ -236,8 +349,13 @@ class SessionController implements \SessionHandlerInterface
      */
     public function write($session_id, $session_data)
     {
-        $this->session_model->set('data', $session_data);
-        $this->session_model->set('stamp', (new \DateTime())->format('Y-m-d H:i:s'));
+        $now = new \DateTime();
+        $expire = clone $now;
+        $expire->modify('+' . $this->gc_maxlifetime .' SECONDS');
+
+        $this->session_model['data'] = $session_data;
+        $this->session_model['updated'] = $now;
+        $this->session_model['expire'] = $expire;
         $this->session_model->save();
         
         return true;
@@ -258,11 +376,11 @@ class SessionController implements \SessionHandlerInterface
      * @return bool
      */
     
-    //    public function updateTimestamp($sessionId, $sessionData)
-    //    {
-    //        d(__METHOD__, [func_get_args()]);
-    //    }
-    
+    public function updateTimestamp($session_id, $session_data)
+    {
+        $this->write($session_id, $session_data);
+        return true;
+    }
     /**
      * return value should be true if the session id is valid otherwise false if false is returned a new session id
      * will be generated by php internally
@@ -271,9 +389,9 @@ class SessionController implements \SessionHandlerInterface
      *
      * @return bool|void
      */
-    //    public function validateId($sessionId)
-    //    {
-    //        d(__METHOD__, [func_get_args()]);
-    //    }
     
+    public function validateId($session_id)
+    {
+        return !$this->session->newInstance()->tryLoadBy('session_id',$session_id);
+    }
 }

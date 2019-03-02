@@ -26,41 +26,265 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * Created by PhpStorm.
- * User: abbadon1334
- * Date: 2/27/19
- * Time: 1:53 AM
- */
+namespace atk4\ATK4DBSession\tests;
 
-use atk4\ATK4DBSession\SessionController;
+use atk4\ATK4DBSession\tests\SessionTraits\traitNeededFiles;
+use atk4\ATK4DBSession\tests\SessionTraits\traitPhpServerProcess;
+use atk4\core\PHPUnit_AgileTestCase;
 
-class SessionControllerTest extends PHPUnit_Framework_TestCase
+class SessionControllerTest extends PHPUnit_AgileTestCase
 {
-    public $session;
+    use traitPhpServerProcess;
+    use traitNeededFiles;
     
-    protected function setUp()
+    public static $db_file  = __DIR__ . DIRECTORY_SEPARATOR . 'dbsess.sqlite';
+    public static $jar_file = __DIR__ . DIRECTORY_SEPARATOR . 'cookie.jar';
+    
+    public static $jar;
+    
+    public static $sid;
+    
+    /* SETUP FUNCTIONS */
+    protected static function getNeededFiles()
     {
+        return [
+            static::$db_file,
+            static::$jar_file
+        ];
+    }
+    
+    protected static function getPhpServerOptions()
+    {
+        return [
+            'host' => 'localhost',
+            'port' => 8080,
+            'root_dir' => __DIR__ . DIRECTORY_SEPARATOR,
+            'router' => __DIR__ . DIRECTORY_SEPARATOR . 'webserver.php'
+        ];
+    }
+    
+    public static function setUpBeforeClass()
+    {
+        static::removeNeededFiles();
+        
+        static::createNeededFiles();
+    
+        static::$jar = new \GuzzleHttp\Cookie\FileCookieJar(static::$jar_file);
+        
+        static::startBackgroundProcess();
+        
+        // any output will trigger sessions, best to remove output of any type
+        static::clearBackgroundProcessOutput();
+        
+        static::verifyBackgroundProcessStarted();
+    }
+    
+    public static function tearDownAfterClass()
+    {
+        static::stopBackgroundProcess();
+    }
+    
+    /* CLIENT */
+    
+    protected function getClient()
+    {
+        $opts = [
+            'http_errors' => false,
+            'cookies' => static::$jar
+        ];
+        
+        $client = new \GuzzleHttp\Client($opts);
+        
+        return $client;
+    }
+    
+    public function getSid()
+    {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/sid");
+    
+        $output_array = [];
+        preg_match('/^\[SID\](.*)$/m', (string) $response->getBody(), $output_array);
+        
+        return $output_array[1];
+    }
+    
+    public function testServer()
+    {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/ping");
+        
+        $status = $response->getStatusCode();
+        
+        $this->assertEquals(200,$status);
+        
+        $response = $this->getClient()->request('GET',"http://localhost:8080/give404");
+    
+        $status = $response->getStatusCode();
+    
+        $this->assertEquals(404,$status);
+        
+        // get SID
+    
+        static::$sid = $this->getSid();
+    }
+    
+    public function testSID()
+    {
+        $sid = $this->getSid();
+        
+        $this->assertEquals($sid,static::$sid);
+    }
+    
+    public function testSessionSetVar()
+    {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/clear/test");
+        $this->assertEquals(200,$response->getStatusCode());
+    
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = '';
+    
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/set/test/1334");
+        
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
         
     }
     
-    protected function tearDown()
+    public function testSessionGetVar()
     {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/get/test");
+    
+        $output_array = [];
+        preg_match('/^\[VAL\](.*)$/m', (string) $response->getBody(), $output_array);
+        $val = $output_array[1];
         
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = '[VAL]' . $val;
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        $assert_actions[] = static::$sid;
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = '';
+        
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
     }
     
-    public function testOpen()
+    public function testSessionRegenerate()
     {
-        
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/regenerate");
+    
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        //$assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        //$assert_actions[] = static::$sid;
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::destroy';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::create_sid';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = '';
+    
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
     }
     
-    public function testWrite()
+    public function testSessionGetNewSidAfterRegenerate()
     {
-        
+    
+        $new_sid = $this->getSid();
+    
+        $this->assertNotEquals($new_sid,static::$sid);
+    
+        static::$sid = $new_sid;
     }
     
-    public function testCheckWrite()
+    public function testSessionGetVarAfterRegenerate()
     {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/get/test");
+        
+        $output_array = [];
+        preg_match('/^\[VAL\](.*)$/m', (string) $response->getBody(), $output_array);
+        $val = $output_array[1];
+        
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = '[VAL]' . $val;
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        $assert_actions[] = static::$sid;
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = '';
+        
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
+    }
     
+    public function testSessionDestroy()
+    {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/destroy");
+        
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::destroy';
+        $assert_actions[] = '';
+        
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
+    }
+    
+    
+    public function testSessionGetVarAfterDestroy()
+    {
+        $response = $this->getClient()->request('GET',"http://localhost:8080/session/get/test");
+        
+        $assert_actions = [];
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = '[VAL]'; // <-- val must be null
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = '';
+        
+        $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
+    }
+    
+    
+    /**
+     * Test triggering of Garbage collector
+     *
+     * Due to the nature of random, can give false positive.
+     *
+     * WebServer for test purpose is set to trigger 1/100 request
+     *
+     * during tests i see values from 300 to 500 with peak of 700.
+     *
+     * i decided to put it at 1000, just to :
+     * - check not triggering at all ( exit after 1000 n cycle )
+     * - check for erroneous instant ( n cycle = 0 )
+     */
+    public function testTriggerGarbageCollector()
+    {
+        $n_cycle = 0;
+        while(true)
+        {
+            $response = $this->getClient()->request('GET', "http://localhost:8080/session/sid");
+            $body = $response->getBody();
+            
+            if(strpos($body,'atk4\ATK4DBSession\tests\SessionControllerCallTracer::gc') !== false)
+            {
+                break;
+            }
+            
+            $n_cycle++;
+            
+            if($n_cycle > 1000)
+            {
+                $this->fail('garbage collector not triggered after 1000 calls');
+            }
+        }
+    
+        $this->assertGreaterThanOrEqual(0,$n_cycle);
+        
+        echo "collector trigger was done at : " . $n_cycle;
     }
 }
