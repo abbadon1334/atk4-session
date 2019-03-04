@@ -12,7 +12,7 @@ include '../vendor/autoload.php';
 $db = \atk4\data\Persistence::connect('mysql://root:password@localhost/atk4');
 
 // init session handler
-new \atk4\ATK4DBSession\SessionController($p);
+new \atk4\ATK4DBSession\SessionHandler($p);
 ```
 
 *Create session table using atk4\schema*
@@ -28,18 +28,18 @@ CREATE TABLE `session` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `session_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `data` text COLLATE utf8_unicode_ci,
-  `stamp` timestamp NULL DEFAULT NULL,
+  `created_on` timestamp NULL DEFAULT NULL,
+  `updated_on` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `session_id` (`session_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 ```
 
-Constructor of SessionController
-================================
+## Constructor of SessionHandler
 
 ```php
 /**
- * SessionController constructor.
+ * SessionHandler constructor.
  *
  * @param \atk4\data\Persistence    $p                      atk4 data persistence 
  * @param int                       $gc_maxlifetime         seconds until session expire
@@ -49,8 +49,21 @@ Constructor of SessionController
 public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
 ```
 
-Why i need to replace the default PHP Session Handler with this?
-================================================================
+## $gc_maxlifetime
+max session lifetime before eligible to gc, default value is set to 60 * 60 secods = 1 hour
+
+## $gc_probability
+percentage of probability of gc expired sessions, default is set to 1/1000 request.
+You have to consider few things for tweaking this value, because it must be sized to your project
+
+if you use InnoDB deletes are slow and if set it low too many calls will have a little delay, if you set too high few calls will have a huge delay.  
+
+Considering disable it setting this value to *false* and use an alternative method like cronJob with frequency */2 * * * * that calls code like example : demos/cronjob.php
+
+
+ 
+
+### Why i need to replace the default PHP Session Handler with this?
 
 Because of file locking ( here a good article about the argument [link](https://ma.ttias.be/php-session-locking-prevent-sessions-blocking-in-requests/))
 
@@ -60,7 +73,7 @@ It's clearly a shame to have file locking on things that are usually static, lik
 
 Using an alternative you'll have for sure race conditions, BUT what race condition can be if you, usually, have only an ID in $_SESSION and that is nearly immutable from login to logout.
 
-SessionController will substitute SessionHandler class in PHP and will store session data in database using atk4\data instead of using files.
+SessionHandler will substitute SessionHandler class in PHP and will store session data in database using atk4\data instead of using files.
 
 In atk4\ui where async calls are massively used, this problem is much more evident.
 

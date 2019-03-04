@@ -7,11 +7,9 @@ $persistence_filename = __DIR__ . DIRECTORY_SEPARATOR . 'dbsess.sqlite';
 
 $p = new \atk4\data\Persistence_SQL('sqlite:' . $persistence_filename);
 
-$model = new \atk4\ATK4DBSession\SessionModel($p);
-
 (new \atk4\schema\Migration\SQLite(new \atk4\ATK4DBSession\SessionModel($p)))->migrate();
 
-$session = new \atk4\ATK4DBSession\tests\SessionControllerCallTracer($p,60 *60,100);
+$session = new \atk4\ATK4DBSession\tests\SessionHandlerCallTracer($p, 60 * 60, 100);
 
 /**
 When it will catch errors

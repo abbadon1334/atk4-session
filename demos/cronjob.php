@@ -26,29 +26,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace atk4\ATK4DBSession;
+include __DIR__ . '/../vendor/autoload.php';
 
-class SessionModel extends \atk4\data\Model
-{
-    public $table = 'session';
-    public $id_field = 'id';
-    
-    public function init()
-    {
-        parent::init();
-        
-        $this->addFields([
-            ['session_id'   , 'type' => 'string'],
-            ['data'         , 'type' => 'text'], // < === must be text or other big data table
-            ['created_on'   , 'type' => 'datetime', 'system' => 1, 'default' => date('Y-m-d H:i:s')],
-            ['updated_on'   , 'type' => 'datetime', 'system' => 1, 'default' => null]
-        ]);
-    
-        // thx @skondakov
-        $this->addHook('beforeSave', function ($m) {
-            if ($m['id']) {
-                $m['updated_on'] = date('Y-m-d H:i:s');
-            }
-        });
-    }
-}
+$p = new \atk4\data\Persistence_SQL('mysql:dbname=atk4;host=localhost', 'atk4', '');
+
+// create the table in database using schema\Migration
+// use it one time to creqate the table, don't migrate on every call, please leave mysql alone ;)
+(new \atk4\schema\Migration\MySQL(new \atk4\ATK4DBSession\SessionModel($p)))->migrate();
+
+// init SessionHandler
+(new \atk4\ATK4DBSession\SessionHandler($p))->executeGC();

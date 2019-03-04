@@ -28,15 +28,15 @@
 
 namespace atk4\ATK4DBSession\tests;
 
-use atk4\ATK4DBSession\SessionController;
+use atk4\ATK4DBSession\SessionHandler;
 
 /**
- * Class SessionControllerCallTracer
+ * Class SessionHandlerCallTracer
  *
- * extended from SessionController to track calls to method of sessionHandler
+ * extended from SessionHandler to track calls to method of sessionHandler
  *
  */
-class SessionControllerCallTracer extends SessionController {
+class SessionHandlerCallTracer extends SessionHandler {
 
     public $executed_actions = [];
     

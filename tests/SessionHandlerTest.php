@@ -32,7 +32,7 @@ use atk4\ATK4DBSession\tests\SessionTraits\traitNeededFiles;
 use atk4\ATK4DBSession\tests\SessionTraits\traitPhpServerProcess;
 use atk4\core\PHPUnit_AgileTestCase;
 
-class SessionControllerTest extends PHPUnit_AgileTestCase
+class SessionHandlerTest extends PHPUnit_AgileTestCase
 {
     use traitPhpServerProcess;
     use traitNeededFiles;
@@ -65,8 +65,6 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
     
     public static function setUpBeforeClass()
     {
-        static::removeNeededFiles();
-        
         static::createNeededFiles();
     
         static::$jar = new \GuzzleHttp\Cookie\FileCookieJar(static::$jar_file);
@@ -82,6 +80,7 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
     public static function tearDownAfterClass()
     {
         static::stopBackgroundProcess();
+        static::removeNeededFiles();
     }
     
     /* CLIENT */
@@ -140,9 +139,9 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $this->assertEquals(200,$response->getStatusCode());
     
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
     
         $response = $this->getClient()->request('GET',"http://localhost:8080/session/set/test/1334");
@@ -160,12 +159,12 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $val = $output_array[1];
         
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]' . $val;
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::updateTimestamp';
         $assert_actions[] = static::$sid;
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
         
         $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
@@ -176,15 +175,15 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $response = $this->getClient()->request('GET',"http://localhost:8080/session/regenerate");
     
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
-        //$assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
+        //$assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::updateTimestamp';
         //$assert_actions[] = static::$sid;
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::destroy';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::create_sid';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::destroy';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::create_sid';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
     
         $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
@@ -209,12 +208,12 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $val = $output_array[1];
         
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]' . $val;
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::updateTimestamp';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::updateTimestamp';
         $assert_actions[] = static::$sid;
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
         
         $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
@@ -225,9 +224,9 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $response = $this->getClient()->request('GET',"http://localhost:8080/session/destroy");
         
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::destroy';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::destroy';
         $assert_actions[] = '';
         
         $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
@@ -239,10 +238,10 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
         $response = $this->getClient()->request('GET',"http://localhost:8080/session/get/test");
         
         $assert_actions = [];
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::open';
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::read';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'; // <-- val must be null
-        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionControllerCallTracer::write';
+        $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
         
         $this->assertEquals(implode(PHP_EOL,$assert_actions), (string) $response->getBody());
@@ -270,7 +269,7 @@ class SessionControllerTest extends PHPUnit_AgileTestCase
             $response = $this->getClient()->request('GET', "http://localhost:8080/session/sid");
             $body = $response->getBody();
             
-            if(strpos($body,'atk4\ATK4DBSession\tests\SessionControllerCallTracer::gc') !== false)
+            if(strpos($body,'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::gc') !== false)
             {
                 break;
             }

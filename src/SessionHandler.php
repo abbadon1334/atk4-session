@@ -28,47 +28,45 @@
 
 namespace atk4\ATK4DBSession;
 
-class SessionController implements \SessionHandlerInterface
+class SessionHandler implements \SessionHandlerInterface
 {
     /**
-     * Za Session id
+     * Session id prefix
      *
      * @var string
      */
-    private $session_id = null;
-
     private $session_id_prefix = 'atk4';
     
     /**
      * Model used for Session
      *
-     * @var atk4\DBSession\DBSessionModel
+     * @var \atk4\ATK4DBSession\SessionModel
      */
     private $session_model;
 
     /**
      * Persistence
      *
-     * @var atk4\data\Persistence
+     * @var \atk4\data\Persistence
      */
     private $persistence;
     
     /**
      * Max lifetime of a session before expire
      *
-     * @var float
+     * @var int
      */
-    private $gc_expire = 60 * 60; // one hour
+    private $gc_maxlifetime = 60 * 60; // one hour
     
     /**
      * Percentage of triggering gc
      *
      * @var float
      */
-    private $gc_trigger = 1 / 1000; // gc trigger 1 over 1000 request
+    private $gc_trigger_probability = 1 / 1000; // gc trigger 1 over 1000 request
     
     /**
-     * SessionController constructor.
+     * SessionHandler constructor.
      *
      * @param \atk4\data\Persistence    $p                      atk4 data persistence
      * @param int                       $gc_maxlifetime         seconds until session expire
@@ -77,11 +75,15 @@ class SessionController implements \SessionHandlerInterface
      */
     public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
     {
-        $this->gc_expire  = $gc_maxlifetime?:$this->gc_expire;
-        $this->gc_trigger = $gc_probability?:$this->gc_trigger;
-    
-        // calculate the number to be used later in random function;
-        $this->gc_trigger = pow(10, strlen($this->gc_trigger) - (strpos($this->gc_trigger, '.') + 1));
+        $this->gc_maxlifetime         = $gc_maxlifetime?:$this->gc_maxlifetime;
+        $this->gc_trigger_probability = $gc_probability?:$this->gc_trigger_probability;
+        
+        // if is not disabled
+        if($this->gc_trigger_probability !== false) {
+            // calculate the number to be used later in random function;
+            $this->gc_trigger_probability = pow(10, strlen($this->gc_trigger_probability)
+                                                    - (strpos($this->gc_trigger_probability, '.') + 1));
+        }
         
         $this->persistence = $p;
 
@@ -105,7 +107,7 @@ class SessionController implements \SessionHandlerInterface
         {
             case PHP_SESSION_DISABLED:
                 // @codeCoverageIgnoreStart - impossible to test
-                throw new Exception(['Sessions are disabled on server']);
+                throw new \Exception(['Sessions are disabled on server']);
                 // @codeCoverageIgnoreEnd
             break;
 
@@ -150,6 +152,7 @@ class SessionController implements \SessionHandlerInterface
      *
      * @return string
      * @since 5.5.1
+     * @throws \Exception
      */
     public function create_sid()
     {
@@ -233,9 +236,10 @@ class SessionController implements \SessionHandlerInterface
         if($this->session_model->loaded())
         {
             $this->session_model->delete();
+            return true;
         }
-        
-        return true;
+    
+        return false;
     }
     
     /**
@@ -253,18 +257,25 @@ class SessionController implements \SessionHandlerInterface
      * @param int $maxlifetime
      *
      * @return bool
-     * @throws \atk4\data\Exception
      */
     public function gc($maxlifetime)
     {
-        $m = $this->session_model->newInstance();
-        $m->addCondition($m->expr('[expire] < []',(new \DateTime())->format('Y-m-d H:i:s')));
-    
-        foreach ($m as $m_record) {
-            $m_record->delete();
-        }
+        $this->executeGC();
         
         return true;
+    }
+    
+    public function executeGC()
+    {
+        // thx @skondakov
+        // even if is a quick operation moving here time calculation is better
+        $old_datetime = date('Y-m-d H:i:s', time() - $this->gc_maxlifetime);
+    
+        $m = $this->session_model->newInstance();
+        $m->addCondition('created_on', '<', $old_datetime);
+    
+        // thx @skondakov i don't know this
+        $m->each('delete');
     }
     
     /**
@@ -286,8 +297,12 @@ class SessionController implements \SessionHandlerInterface
      */
     public function open($save_path, $session_name)
     {
-        if(rand(0,$this->gc_trigger) === $this->gc_trigger) {
-            $this->gc($this->gc_expire);
+        if($this->gc_trigger_probability !== false)
+        {
+            if (rand(0, $this->gc_trigger_probability) === $this->gc_trigger_probability)
+            {
+                $this->gc($this->gc_maxlifetime);
+            }
         }
     
         return true;
@@ -316,11 +331,17 @@ class SessionController implements \SessionHandlerInterface
      */
     public function read($session_id)
     {
-        $this->session_model->tryLoadBy('session_id', $session_id);
-    
-        $is_loaded = $this->session_model->loaded();
+        $data = ''; // no data must return an empty string
         
-        return (string) $this->session_model->get('data');
+        $this->session_model->tryLoadBy('session_id', $session_id);
+        
+        if($this->session_model->loaded())
+        {
+            $data = $this->session_model->get('data');
+        }
+        
+        // needed even if is either model->get('data') and '' are string
+        return (string) $data;
     }
     
     /**
@@ -349,13 +370,27 @@ class SessionController implements \SessionHandlerInterface
      */
     public function write($session_id, $session_data)
     {
-        $now = new \DateTime();
-        $expire = clone $now;
-        $expire->modify('+' . $this->gc_expire .' SECONDS');
-
+        // @TODO Verify if there is a real need of this tryLoad here
+        // $this->session_model->tryLoadBy('session_id',$session_id);
+        // $this->session_model['session_id'] = $session_id;
+        //
+        // Model is already loaded when this method will be called
+        //
+        // Session handling workflow
+        //
+        // session_start()
+        //   - session_handler->open
+        //     - session_handler->read
+        //     - call other methods
+    
+        // @TODO check if this can prevent change session_id on current session
+        // if all is ok this will make session_handler work as intended
+        if(!$this->session_model->loaded())
+        {
+            $this->session_model['session_id'] = $session_id;
+        }
+        
         $this->session_model['data'] = $session_data;
-        $this->session_model['updated'] = $now;
-        $this->session_model['expire'] = $expire;
         $this->session_model->save();
         
         return true;
@@ -374,24 +409,25 @@ class SessionController implements \SessionHandlerInterface
      * @param string $session_data
      *
      * @return bool
+     * @throws \atk4\data\Exception
      */
-    
     public function updateTimestamp($session_id, $session_data)
     {
-        $this->write($session_id, $session_data);
-        return true;
+        return $this->write($session_id, $session_data);
     }
+    
     /**
      * return value should be true if the session id is valid otherwise false if false is returned a new session id
      * will be generated by php internally
      *
-     * @param string $sessionId
+     * @param $session_id
      *
-     * @return bool|void
+     * @return bool
+     * @throws \Exception
      */
-    
     public function validateId($session_id)
     {
-        return !$this->session->newInstance()->tryLoadBy('session_id',$session_id);
+        $this->session_model->newInstance()->tryLoadBy('session_id',$session_id);
+        return !$this->session_model->loaded();
     }
 }

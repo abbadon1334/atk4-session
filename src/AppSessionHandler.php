@@ -26,29 +26,42 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * Created by PhpStorm.
+ * User: abbadon1334
+ * Date: 3/4/19
+ * Time: 8:03 AM
+ */
+
 namespace atk4\ATK4DBSession;
 
-class SessionModel extends \atk4\data\Model
+
+class AppSessionHandler
 {
-    public $table = 'session';
-    public $id_field = 'id';
+    use \atk4\core\AppScopeTrait;
+    use \atk4\core\InitializerTrait {
+        init as _init;
+    }
+    
+    public $persistence;
+    
+    public $gc_maxlifetime;
+    
+    public $gc_probability;
+    
+    public $php_session_options;
+    
+    public $session_handler;
     
     public function init()
     {
-        parent::init();
+        $this->_init();
         
-        $this->addFields([
-            ['session_id'   , 'type' => 'string'],
-            ['data'         , 'type' => 'text'], // < === must be text or other big data table
-            ['created_on'   , 'type' => 'datetime', 'system' => 1, 'default' => date('Y-m-d H:i:s')],
-            ['updated_on'   , 'type' => 'datetime', 'system' => 1, 'default' => null]
-        ]);
-    
-        // thx @skondakov
-        $this->addHook('beforeSave', function ($m) {
-            if ($m['id']) {
-                $m['updated_on'] = date('Y-m-d H:i:s');
-            }
-        });
+        $this->session_handler = new SessionHandler(
+            $this->persistence ?: $this->app->db,
+            $this->gc_maxlifetime,
+            $this->gc_probability,
+            $this->php_session_options
+        );
     }
 }
