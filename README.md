@@ -1,7 +1,7 @@
 # atk4-session
 Session handler for atk4\data\Persistence (@see https://github.com/atk4/data)
 
-initialize *session handler* without atk4\ui
+initialize **without atk4\ui**
 
 ``` php
 
@@ -15,7 +15,7 @@ $db = \atk4\data\Persistence::connect('mysql://root:password@localhost/atk4');
 new \atk4\ATK4DBSession\SessionHandler($p);
 ```
 
-initialize *session handler* with atk4\ui in App::init method 
+initialize **with atk4\ui in App::init method**
 
 ``` php
 $this->add(new AppSessionHandler());
