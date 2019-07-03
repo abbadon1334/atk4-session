@@ -104,7 +104,7 @@ class SessionHandler implements \SessionHandlerInterface
         register_shutdown_function('session_write_close');
 
         switch (session_status()) {
-            case PHP_SESSION_DISABLED :
+            case PHP_SESSION_DISABLED:
                 // @codeCoverageIgnoreStart - impossible to test
                 throw new \Exception(['Sessions are disabled on server']);
                 // @codeCoverageIgnoreEnd
