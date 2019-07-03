@@ -30,11 +30,10 @@
  * Created by PhpStorm.
  * User: abbadon1334
  * Date: 3/4/19
- * Time: 8:03 AM
+ * Time: 8:03 AM.
  */
 
 namespace atk4\ATK4DBSession;
-
 
 class AppSessionHandler
 {
@@ -42,21 +41,21 @@ class AppSessionHandler
     use \atk4\core\InitializerTrait {
         init as _init;
     }
-    
+
     public $persistence;
-    
+
     public $gc_maxlifetime;
-    
+
     public $gc_probability;
-    
+
     public $php_session_options;
-    
+
     public $session_handler;
-    
+
     public function init()
     {
         $this->_init();
-        
+
         $this->session_handler = new SessionHandler(
             $this->persistence ?: $this->app->db,
             $this->gc_maxlifetime,

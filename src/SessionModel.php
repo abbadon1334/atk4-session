@@ -32,18 +32,18 @@ class SessionModel extends \atk4\data\Model
 {
     public $table = 'session';
     public $id_field = 'id';
-    
+
     public function init()
     {
         parent::init();
-        
+
         $this->addFields([
-            ['session_id'   , 'type' => 'string'],
-            ['data'         , 'type' => 'text'], // < === must be text or other big data table
-            ['created_on'   , 'type' => 'datetime', 'system' => 1, 'default' => date('Y-m-d H:i:s')],
-            ['updated_on'   , 'type' => 'datetime', 'system' => 1, 'default' => null]
+            ['session_id', 'type' => 'string'],
+            ['data', 'type' => 'text'], // < === must be text or other big data table
+            ['created_on', 'type' => 'datetime', 'system' => 1, 'default' => date('Y-m-d H:i:s')],
+            ['updated_on', 'type' => 'datetime', 'system' => 1, 'default' => null],
         ]);
-    
+
         // thx @skondakov
         $this->addHook('beforeSave', function ($m) {
             if ($m['id']) {
