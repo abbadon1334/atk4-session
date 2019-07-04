@@ -31,81 +31,80 @@ namespace atk4\ATK4DBSession;
 class SessionHandler implements \SessionHandlerInterface
 {
     /**
-     * Session id prefix
+     * Session id prefix.
      *
      * @var string
      */
     private $session_id_prefix = 'atk4';
-    
+
     /**
-     * Model used for Session
+     * Model used for Session.
      *
      * @var \atk4\ATK4DBSession\SessionModel
      */
     private $session_model;
 
     /**
-     * Persistence
+     * Persistence.
      *
      * @var \atk4\data\Persistence
      */
     private $persistence;
-    
+
     /**
-     * Max lifetime of a session before expire
+     * Max lifetime of a session before expire.
      *
      * @var int
      */
     private $gc_maxlifetime = 60 * 60; // one hour
-    
+
     /**
-     * Percentage of triggering gc
+     * Percentage of triggering gc.
      *
      * @var float
      */
     private $gc_trigger_probability = 1 / 1000; // gc trigger 1 over 1000 request
-    
+
     /**
      * SessionHandler constructor.
      *
-     * @param \atk4\data\Persistence    $p                      atk4 data persistence
-     * @param int                       $gc_maxlifetime         seconds until session expire
-     * @param float                     $gc_probability         probability of gc for expired sessions
-     * @param array                     $php_session_options    options for session_start
+     * @param \atk4\data\Persistence $p                   atk4 data persistence
+     * @param int                    $gc_maxlifetime      seconds until session expire
+     * @param float                  $gc_probability      probability of gc for expired sessions
+     * @param array                  $php_session_options options for session_start
      */
     public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
     {
-        $this->gc_maxlifetime         = $gc_maxlifetime?:$this->gc_maxlifetime;
-        $this->gc_trigger_probability = $gc_probability?:$this->gc_trigger_probability;
-        
+        $this->gc_maxlifetime = $gc_maxlifetime ?: $this->gc_maxlifetime;
+        $this->gc_trigger_probability = $gc_probability ?: $this->gc_trigger_probability;
+
         // if is not disabled
-        if($this->gc_trigger_probability !== false) {
+        if ($this->gc_trigger_probability !== false) {
             // calculate the number to be used later in random function;
             $this->gc_trigger_probability = pow(10, strlen($this->gc_trigger_probability)
                                                     - (strpos($this->gc_trigger_probability, '.') + 1));
         }
-        
+
         $this->persistence = $p;
 
         $this->session_model = new SessionModel($this->persistence);
-    
-        session_set_save_handler (
-            [$this,'open'],
-            [$this,'close'] ,
-            [$this,'read'] ,
-            [$this,'write'] ,
-            [$this,'destroy'] ,
-            [$this,'gc'] ,
-            [$this,'create_sid'] ,
-            [$this,'validateId'] ,
-            [$this,'updateTimestamp']
-        );
-        
-        register_shutdown_function( 'session_write_close' );
 
-        switch (session_status())
-        {
-            case PHP_SESSION_DISABLED:
+        session_set_save_handler(
+            [$this, 'open'],
+            [$this, 'close'],
+            [$this, 'read'],
+            [$this, 'write'],
+            [$this, 'destroy'],
+            [$this, 'gc'],
+            [$this, 'create_sid'],
+            [$this, 'validateId'],
+            [$this, 'updateTimestamp']
+        );
+
+        register_shutdown_function('session_write_close');
+
+        switch (session_status()) {
+            case PHP_SESSION_DISABLED :
                 // @codeCoverageIgnoreStart - impossible to test
                 throw new \Exception(['Sessions are disabled on server']);
                 // @codeCoverageIgnoreEnd
@@ -122,7 +121,7 @@ class SessionHandler implements \SessionHandlerInterface
     }
 
     /**
-     * Close the session
+     * Close the session.
      *
      * @link https://php.net/manual/en/sessionhandler.close.php
      *
@@ -137,11 +136,12 @@ class SessionHandler implements \SessionHandlerInterface
     public function close()
     {
         $this->session_model->unload();
+
         return true;
     }
-    
+
     /**
-     * Return a new session ID
+     * Return a new session ID.
      *
      * @link  https://php.net/manual/en/sessionhandler.create-sid.php
      *
@@ -150,9 +150,11 @@ class SessionHandler implements \SessionHandlerInterface
      *
      * A session ID valid for the default session handler.
      *
-     * @return string
-     * @since 5.5.1
      * @throws \Exception
+     *
+     * @return string
+     *
+     * @since 5.5.1
      */
     public function create_sid()
     {
@@ -163,42 +165,43 @@ class SessionHandler implements \SessionHandlerInterface
         $sid[] = $this->create_sid_part();
         $sid[] = $this->create_sid_part();
 
-        return implode('-',$sid);
+        return implode('-', $sid);
     }
-    
+
     /**
      * Create an hard guessing sid with a UUID structure but with variable chunk length
      * ex :
-     * [prefix][chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]
+     * [prefix][chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)]-[chunk(4,12)].
+     *
+     * @throws \Exception
      *
      * @return string
-     * @throws \Exception
      */
     private function create_sid_part()
     {
-        $desired_output_length = rand(4,12);
+        $desired_output_length = rand(4, 12);
         $bits_per_character = 5;
 
         $bytes_needed = ceil($desired_output_length * $bits_per_character / 8);
         $random_input_bytes = random_bytes($bytes_needed);
-       
+
         // The below is translated from function bin_to_readable in the PHP source (ext/session/session.c)
         static $hexconvtab = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,-';
-       
+
         $out = '';
-       
+
         $p = 0;
         $q = strlen($random_input_bytes);
         $w = 0;
         $have = 0;
-       
+
         $mask = (1 << $bits_per_character) - 1;
-    
+
         $chars_remaining = $desired_output_length;
         while ($chars_remaining--) {
             if ($have < $bits_per_character) {
                 if ($p < $q) {
-                    $byte = ord( $random_input_bytes[$p++] );
+                    $byte = ord($random_input_bytes[$p++]);
                     $w |= ($byte << $have);
                     $have += 8;
                 } else {
@@ -206,18 +209,18 @@ class SessionHandler implements \SessionHandlerInterface
                     break;
                 }
             }
-    
+
             // consume $bits_per_character bits
             $out .= $hexconvtab[$w & $mask];
             $w >>= $bits_per_character;
             $have -= $bits_per_character;
         }
-    
+
         return $out;
     }
-    
+
     /**
-     * Destroy a session
+     * Destroy a session.
      *
      * @link  https://php.net/manual/en/sessionhandler.destroy.php
      *
@@ -226,24 +229,25 @@ class SessionHandler implements \SessionHandlerInterface
      *
      * @param string $session_id The session ID being destroyed.
      *
-     * @return bool
      * @throws \atk4\data\Exception
+     *
+     * @return bool
      */
     public function destroy($session_id)
     {
-        $this->session_model->tryLoadBy('session_id',$session_id);
+        $this->session_model->tryLoadBy('session_id', $session_id);
 
-        if($this->session_model->loaded())
-        {
+        if ($this->session_model->loaded()) {
             $this->session_model->delete();
+
             return true;
         }
-    
+
         return false;
     }
-    
+
     /**
-     * Cleanup old sessions
+     * Cleanup old sessions.
      *
      * @link  https://php.net/manual/en/sessionhandler.gc.php
      *
@@ -261,25 +265,25 @@ class SessionHandler implements \SessionHandlerInterface
     public function gc($maxlifetime)
     {
         $this->executeGC();
-        
+
         return true;
     }
-    
+
     public function executeGC()
     {
         // thx @skondakov
         // even if is a quick operation moving here time calculation is better
         $old_datetime = date('Y-m-d H:i:s', time() - $this->gc_maxlifetime);
-    
+
         $m = $this->session_model->newInstance();
         $m->addCondition('created_on', '<', $old_datetime);
-    
+
         // thx @skondakov i don't know this
         $m->each('delete');
     }
-    
+
     /**
-     * Initialize session
+     * Initialize session.
      *
      * @link https://php.net/manual/en/sessionhandler.open.php
      *
@@ -297,20 +301,17 @@ class SessionHandler implements \SessionHandlerInterface
      */
     public function open($save_path, $session_name)
     {
-        if($this->gc_trigger_probability !== false)
-        {
-            if (rand(0, $this->gc_trigger_probability) === $this->gc_trigger_probability)
-            {
+        if ($this->gc_trigger_probability !== false) {
+            if (rand(0, $this->gc_trigger_probability) === $this->gc_trigger_probability) {
                 $this->gc($this->gc_maxlifetime);
             }
         }
-    
+
         return true;
     }
-    
-    
+
     /**
-     * Read session data
+     * Read session data.
      *
      * @link https://php.net/manual/en/sessionhandler.read.php
      *
@@ -326,26 +327,26 @@ class SessionHandler implements \SessionHandlerInterface
      *
      * @param string $session_id The session id to read data for.
      *
-     * @return string
      * @throws \Exception
+     *
+     * @return string
      */
     public function read($session_id)
     {
         $data = ''; // no data must return an empty string
-        
+
         $this->session_model->tryLoadBy('session_id', $session_id);
-        
-        if($this->session_model->loaded())
-        {
+
+        if ($this->session_model->loaded()) {
             $data = $this->session_model->get('data');
         }
-        
+
         // needed even if is either model->get('data') and '' are string
         return (string) $data;
     }
-    
+
     /**
-     * Write session data
+     * Write session data.
      *
      * @link  https://php.net/manual/en/sessionhandler.write.php
      *
@@ -362,11 +363,12 @@ class SessionHandler implements \SessionHandlerInterface
      * statements in the "write" handler will never be seen in the browser. If debugging output is necessary, it is
      * suggested that the debug output be written to a file instead.
      *
-     * @param string $session_id The session id.
+     * @param string $session_id   The session id.
      * @param string $session_data
      *
-     * @return bool
      * @throws \atk4\data\Exception
+     *
+     * @return bool
      */
     public function write($session_id, $session_data)
     {
@@ -382,22 +384,21 @@ class SessionHandler implements \SessionHandlerInterface
         //   - session_handler->open
         //     - session_handler->read
         //     - call other methods
-    
+
         // @TODO check if this can prevent change session_id on current session
         // if all is ok this will make session_handler work as intended
-        if(!$this->session_model->loaded())
-        {
+        if (!$this->session_model->loaded()) {
             $this->session_model['session_id'] = $session_id;
         }
-        
+
         $this->session_model['data'] = $session_data;
         $this->session_model->save();
-        
+
         return true;
     }
-    
+
     /**
-     * Update timestamp of a session
+     * Update timestamp of a session.
      *
      * return value should be true for success or false for failure
      *
@@ -405,29 +406,32 @@ class SessionHandler implements \SessionHandlerInterface
      * serialized string and passing it as this parameter. Please note sessions use an alternative serialization
      * method.
      *
-     * @param string $session_id The session id
+     * @param string $session_id   The session id
      * @param string $session_data
      *
-     * @return bool
      * @throws \atk4\data\Exception
+     *
+     * @return bool
      */
     public function updateTimestamp($session_id, $session_data)
     {
         return $this->write($session_id, $session_data);
     }
-    
+
     /**
      * return value should be true if the session id is valid otherwise false if false is returned a new session id
-     * will be generated by php internally
+     * will be generated by php internally.
      *
      * @param $session_id
      *
-     * @return bool
      * @throws \Exception
+     *
+     * @return bool
      */
     public function validateId($session_id)
     {
-        $this->session_model->newInstance()->tryLoadBy('session_id',$session_id);
+        $this->session_model->newInstance()->tryLoadBy('session_id', $session_id);
+
         return !$this->session_model->loaded();
     }
 }
