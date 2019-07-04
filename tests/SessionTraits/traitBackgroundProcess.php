@@ -71,7 +71,7 @@ trait traitBackgroundProcess
      */
     public static function stopBackgroundProcess()
     {
-        self::$process->stop(0,9);
+        self::$process->stop(0, 9);
     }
 
     /**

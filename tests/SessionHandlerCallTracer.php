@@ -31,15 +31,14 @@ namespace atk4\ATK4DBSession\tests;
 use atk4\ATK4DBSession\SessionHandler;
 
 /**
- * Class SessionHandlerCallTracer
+ * Class SessionHandlerCallTracer.
  *
  * extended from SessionHandler to track calls to method of sessionHandler
- *
  */
-class SessionHandlerCallTracer extends SessionHandler {
-
+class SessionHandlerCallTracer extends SessionHandler
+{
     public $executed_actions = [];
-    
+
     public function getCallsSequence()
     {
         return $this->executed_actions;
@@ -52,50 +51,56 @@ class SessionHandlerCallTracer extends SessionHandler {
 
     private function addCall($name)
     {
-        print($name) . PHP_EOL;
+        echo($name).PHP_EOL;
         $this->executed_actions[] = $name;
     }
 
     public function open($save_path, $session_name)
     {
         $this->addCall(__METHOD__);
+
         return parent::open($save_path, $session_name);
     }
 
     public function read($session_id)
     {
         $this->addCall(__METHOD__);
+
         return parent::read($session_id);
     }
 
     public function destroy($session_id)
     {
         $this->addCall(__METHOD__);
+
         return parent::destroy($session_id);
     }
 
     public function write($session_id, $session_data)
     {
         $this->addCall(__METHOD__);
+
         return parent::write($session_id, $session_data);
     }
 
     public function gc($maxlifetime)
     {
         $this->addCall(__METHOD__);
+
         return parent::gc($maxlifetime);
     }
 
     public function create_sid()
     {
         $this->addCall(__METHOD__);
+
         return parent::create_sid();
     }
 
     public function updateTimestamp($sessionId, $sessionData)
     {
         $this->addCall(__METHOD__);
-        print($sessionId) . PHP_EOL;
+        echo($sessionId).PHP_EOL;
         //print($sessionData) . PHP_EOL;
         return parent::updateTimestamp($sessionId, $sessionData);
     }
@@ -103,6 +108,7 @@ class SessionHandlerCallTracer extends SessionHandler {
     public function validateId($sessionId)
     {
         $this->addCall(__METHOD__);
+
         return parent::validateId($sessionId);
     }
 }
