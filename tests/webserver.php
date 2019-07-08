@@ -11,7 +11,7 @@ $p = new \atk4\data\Persistence_SQL('sqlite:'.$persistence_filename);
 $session = new \atk4\ATK4DBSession\tests\SessionHandlerCallTracer($p, 60 * 60, 100);
 
 /**
- * When it will catch errors
+ * When it will catch errors.
  *
  * $api = new \atk4\api\Api();
  *
