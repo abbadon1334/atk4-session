@@ -16,9 +16,9 @@ trait traitPhpServerProcess
     protected static function getPhpServerCommand()
     {
         $rootDir = static::getPhpServerOption('root_dir');
-        $router  = static::getPhpServerOption('router');
-        $host    = static::getPhpServerOption('host', 'localhost');
-        $port    = static::getPhpServerOption('port', 8000);
+        $router = static::getPhpServerOption('router');
+        $host = static::getPhpServerOption('host', 'localhost');
+        $port = static::getPhpServerOption('port', 8000);
 
         return sprintf(
             'php -S %s:%d%s%s',
