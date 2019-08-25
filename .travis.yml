@@ -20,6 +20,6 @@ script:
 after_script:
   - mv build/logs/clover.xml coverage/
   - ls -l coverage/
-  - vendor/bin/phpcov  merge coverage/ --clover clover.xml
+  - vendor/bin/phpcov  merge coverage/ --clover build/logs/clover.xml
   - php vendor/bin/codacycoverage clover build/logs/clover.xml
   - ./cc-test-reporter after-build --coverage-input-type clover --exit-code $TRAVIS_TEST_RESULT
