@@ -15,12 +15,12 @@
     "php": ">7.2.0"
   },
   "require-dev": {
-    "guzzlehttp/guzzle": "^6.3",
-    "phpunit/phpunit": "<6",
+    "guzzlehttp/guzzle": "6.3.3",
+    "phpunit/phpunit": "5.7.27",
     "phpunit/phpcov": "*",
-    "symfony/process": "^4.3",
+    "symfony/process": "4.3.3",
     "codeclimate/php-test-reporter": "*",
-    "nikic/fast-route": "^1.3",
+    "nikic/fast-route": "1.3.0",
     "friendsofphp/php-cs-fixer": "dev-master@dev"
   },
   "autoload": {
