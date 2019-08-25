@@ -6,7 +6,7 @@ namespace atk4\ATK4DBSession;
 
 class SessionModel extends \atk4\data\Model
 {
-    public $table = 'session';
+    public $table    = 'session';
     public $id_field = 'id';
 
     public function init(): void
