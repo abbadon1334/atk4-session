@@ -6,6 +6,23 @@ declare(strict_types=1);
 // this is a normal behaviour of PHP Session
 
 require_once __DIR__.'/../vendor/autoload.php';
+use SebastianBergmann\CodeCoverage\CodeCoverage;
+
+$coverage = new CodeCoverage();
+
+$coverage->filter()->addDirectoryToWhitelist('../src');
+
+function coverage()
+{
+    global $coverage;
+    $coverage->stop();
+
+    $writer = new \SebastianBergmann\CodeCoverage\Report\PHP();
+
+    $writer->process($coverage, dirname(realpath(__FILE__)).'/../coverage/'.uniqid('sess', false).'.cov');
+}
+
+$coverage->start($_SERVER['SCRIPT_NAME']);
 
 ob_start();
 
@@ -64,7 +81,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r):
 
 // Fetch method and URI from somewhere
 $httpMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$uri = $_SERVER['REQUEST_URI'] ?? '';
+$uri        = $_SERVER['REQUEST_URI'] ?? '';
 
 // Strip query string (?foo=bar) and decode URI
 if (false !== $pos = strpos($uri, '?')) {
@@ -79,11 +96,12 @@ switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
         header('HTTP/1.0 404 Not Found');
         echo 'Error';
-        exit;
     break;
     case FastRoute\Dispatcher::FOUND:
         $handler = $routeInfo[1];
-        $vars = $routeInfo[2] ?? [];
+        $vars    = $routeInfo[2] ?? [];
         call_user_func_array($handler, $vars);
     break;
 }
+
+coverage();
