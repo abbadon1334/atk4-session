@@ -390,14 +390,13 @@ class SessionHandler implements \SessionHandlerInterface
         $chars_remaining = $desired_output_length;
         while ($chars_remaining--) {
             if ($have < $bits_per_character) {
-                if ($p < $q) {
-                    $byte = ord($random_input_bytes[$p++]);
-                    $w |= ($byte << $have);
-                    $have += 8;
-                } else {
-                    // Should never happen. Input must be large enough.
+                if ($p >= $q) {
                     break;
                 }
+
+                $byte = ord($random_input_bytes[$p++]);
+                $w |= ($byte << $have);
+                $have += 8;
             }
 
             // consume $bits_per_character bits
