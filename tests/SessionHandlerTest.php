@@ -1,69 +1,29 @@
 <?php
-/**
- * Copyright (c) 2019.
- *
- * Francesco "Abbadon1334" Danti <fdanti@gmail.com>
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
+
+declare(strict_types=1);
 
 namespace atk4\ATK4DBSession\tests;
 
 use atk4\ATK4DBSession\tests\SessionTraits\traitNeededFiles;
 use atk4\ATK4DBSession\tests\SessionTraits\traitPhpServerProcess;
-use atk4\core\PHPUnit_AgileTestCase;
+use PHPUnit\Framework\TestCase;
 
-class SessionHandlerTest extends PHPUnit_AgileTestCase
+/**
+ * @internal
+ */
+class SessionHandlerTest extends TestCase
 {
     use traitPhpServerProcess;
     use traitNeededFiles;
 
-    public static $db_file = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
+    public static $db_file  = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
     public static $jar_file = __DIR__.DIRECTORY_SEPARATOR.'cookie.jar';
 
     public static $jar;
 
     public static $sid;
 
-    /* SETUP FUNCTIONS */
-    protected static function getNeededFiles()
-    {
-        return [
-            static::$db_file,
-            static::$jar_file,
-        ];
-    }
-
-    protected static function getPhpServerOptions()
-    {
-        return [
-            'host'     => 'localhost',
-            'port'     => 8080,
-            'root_dir' => __DIR__.DIRECTORY_SEPARATOR,
-            'router'   => __DIR__.DIRECTORY_SEPARATOR.'webserver.php',
-        ];
-    }
-
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         static::createNeededFiles();
 
@@ -72,50 +32,39 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         static::startBackgroundProcess();
 
         // any output will trigger sessions, best to remove output of any type
-        static::clearBackgroundProcessOutput();
-
+        //static::clearBackgroundProcessOutput();
         static::verifyBackgroundProcessStarted();
+
+        parent::setUpBeforeClass();
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         static::stopBackgroundProcess();
         static::removeNeededFiles();
-    }
 
-    /* CLIENT */
-
-    protected function getClient()
-    {
-        $opts = [
-            'http_errors' => false,
-            'cookies'     => static::$jar,
-        ];
-
-        $client = new \GuzzleHttp\Client($opts);
-
-        return $client;
+        parent::tearDownAfterClass();
     }
 
     public function getSid()
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/sid');
+        $response = $this->getClient()->request('GET', '/session/sid');
 
         $output_array = [];
-        preg_match('/^\[SID\](.*)$/m', (string) $response->getBody(), $output_array);
+        preg_match('/^\[SID\](.*)$/m', (string) $response->getBody()->getContents(), $output_array);
 
-        return $output_array[1];
+        return $output_array[1] ?? '';
     }
 
-    public function testServer()
+    public function testServer(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/ping');
+        $response = $this->getClient()->request('GET', '/ping');
 
         $status = $response->getStatusCode();
 
         $this->assertEquals(200, $status);
 
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/give404');
+        $response = $this->getClient()->request('GET', '/give404');
 
         $status = $response->getStatusCode();
 
@@ -126,38 +75,39 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         static::$sid = $this->getSid();
     }
 
-    public function testSID()
+    public function testSID(): void
     {
         $sid = $this->getSid();
 
         $this->assertEquals($sid, static::$sid);
     }
 
-    public function testSessionSetVar()
+    public function testSessionSetVar(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/clear/test');
+        $response = $this->getClient()->request('GET', '/session/clear/test');
         $this->assertEquals(200, $response->getStatusCode());
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
 
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/set/test/1334');
+        $response = $this->getClient()->request('GET', '/session/set/test/1334');
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
     }
 
-    public function testSessionGetVar()
+    public function testSessionGetVar(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/get/test');
+        $response = $this->getClient()->request('GET', '/session/get/test');
 
+        $response_body = (string) $response->getBody()->getContents();
         $output_array = [];
-        preg_match('/^\[VAL\](.*)$/m', (string) $response->getBody(), $output_array);
-        $val = $output_array[1];
+        preg_match('/^\[VAL\](.*)$/m', $response_body, $output_array);
+        $val = $output_array[1] ?? '';
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'.$val;
@@ -166,14 +116,14 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), $response_body);
     }
 
-    public function testSessionRegenerate()
+    public function testSessionRegenerate(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/regenerate');
+        $response = $this->getClient()->request('GET', '/session/regenerate');
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         //$assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::updateTimestamp';
@@ -185,10 +135,10 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
     }
 
-    public function testSessionGetNewSidAfterRegenerate()
+    public function testSessionGetNewSidAfterRegenerate(): void
     {
         $new_sid = $this->getSid();
 
@@ -197,15 +147,16 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         static::$sid = $new_sid;
     }
 
-    public function testSessionGetVarAfterRegenerate()
+    public function testSessionGetVarAfterRegenerate(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/get/test');
+        $response = $this->getClient()->request('GET', '/session/get/test');
 
+        $response_body = (string) $response->getBody()->getContents();
         $output_array = [];
-        preg_match('/^\[VAL\](.*)$/m', (string) $response->getBody(), $output_array);
+        preg_match('/^\[VAL\](.*)$/m', $response_body, $output_array);
         $val = $output_array[1];
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'.$val;
@@ -214,34 +165,34 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), $response_body);
     }
 
-    public function testSessionDestroy()
+    public function testSessionDestroy(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/destroy');
+        $response = $this->getClient()->request('GET', '/session/destroy');
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::destroy';
         $assert_actions[] = '';
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
     }
 
-    public function testSessionGetVarAfterDestroy()
+    public function testSessionGetVarAfterDestroy(): void
     {
-        $response = $this->getClient()->request('GET', 'http://localhost:8080/session/get/test');
+        $response = $this->getClient()->request('GET', '/session/get/test');
 
-        $assert_actions = [];
+        $assert_actions   = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'; // <-- val must be null
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
         $assert_actions[] = '';
 
-        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody());
+        $this->assertEquals(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
     }
 
     /**
@@ -257,18 +208,18 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
      * - check not triggering at all ( exit after 1000 n cycle )
      * - check for erroneous instant ( n cycle = 0 )
      */
-    public function testTriggerGarbageCollector()
+    public function testTriggerGarbageCollector(): void
     {
         $n_cycle = 0;
         while (true) {
-            $response = $this->getClient()->request('GET', 'http://localhost:8080/session/sid');
-            $body = $response->getBody();
+            $response = $this->getClient()->request('GET', '/session/sid');
+            $body     = $response->getBody()->getContents();
 
-            if (strpos($body, 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::gc') !== false) {
+            if (false !== strpos($body, 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::gc')) {
                 break;
             }
 
-            $n_cycle++;
+            ++$n_cycle;
 
             if ($n_cycle > 1000) {
                 $this->fail('garbage collector not triggered after 1000 calls');
@@ -277,6 +228,40 @@ class SessionHandlerTest extends PHPUnit_AgileTestCase
 
         $this->assertGreaterThanOrEqual(0, $n_cycle);
 
-        echo 'collector trigger was done at : '.$n_cycle;
+        echo 'collector trigger was done after '.$n_cycle.' calls to collect garbage';
+    }
+
+    /* SETUP FUNCTIONS */
+    protected static function getNeededFiles()
+    {
+        return [
+            static::$db_file,
+            static::$jar_file,
+        ];
+    }
+
+    protected static function getPhpServerOptions()
+    {
+        return [
+            'host'     => 'localhost',
+            'port'     => 8080,
+            'root_dir' => null, //__DIR__.DIRECTORY_SEPARATOR,
+            'router'   => __DIR__.DIRECTORY_SEPARATOR.'webserver.php',
+        ];
+    }
+
+    /* CLIENT */
+
+    protected function getClient()
+    {
+        $opts = [
+            'base_uri'    => 'http://'.static::getPhpServerOption('host', 'localhost').':'.static::getPhpServerOption('port', 80),
+            'http_errors' => false,
+            'cookies'     => static::$jar,
+        ];
+
+        $client = new \GuzzleHttp\Client($opts);
+
+        return $client;
     }
 }
