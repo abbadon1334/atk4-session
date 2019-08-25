@@ -50,10 +50,8 @@ trait traitBackgroundProcess
             sleep(1);
             static::$process->stop(0);
             sleep(1);
-            static::$process->stop(1,9);
-        } catch(\Throwable $t)
-        {
-
+            static::$process->stop(1, 9);
+        } catch (\Throwable $t) {
         }
     }
 
