@@ -48,7 +48,7 @@ class SessionHandler implements \SessionHandlerInterface
      */
     public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
     {
-        $this->gc_maxlifetime = $gc_maxlifetime ?: $this->gc_maxlifetime;
+        $this->gc_maxlifetime         = $gc_maxlifetime ?: $this->gc_maxlifetime;
         $this->gc_trigger_probability = $gc_probability ?: $this->gc_trigger_probability;
 
         // if is not disabled
@@ -127,7 +127,7 @@ class SessionHandler implements \SessionHandlerInterface
      */
     public function create_sid(): string
     {
-        $sid = [$this->session_id_prefix];
+        $sid   = [$this->session_id_prefix];
         $sid[] = $this->create_sid_part();
         $sid[] = $this->create_sid_part();
         $sid[] = $this->create_sid_part();
@@ -370,9 +370,9 @@ class SessionHandler implements \SessionHandlerInterface
     private function create_sid_part(): string
     {
         $desired_output_length = random_int(4, 12);
-        $bits_per_character = 5;
+        $bits_per_character    = 5;
 
-        $bytes_needed = ceil($desired_output_length * $bits_per_character / 8);
+        $bytes_needed       = ceil($desired_output_length * $bits_per_character / 8);
         $random_input_bytes = random_bytes((int) $bytes_needed);
 
         // The below is translated from function bin_to_readable in the PHP source (ext/session/session.c)
@@ -380,9 +380,9 @@ class SessionHandler implements \SessionHandlerInterface
 
         $out = '';
 
-        $p = 0;
-        $q = strlen($random_input_bytes);
-        $w = 0;
+        $p    = 0;
+        $q    = strlen($random_input_bytes);
+        $w    = 0;
         $have = 0;
 
         $mask = (1 << $bits_per_character) - 1;
