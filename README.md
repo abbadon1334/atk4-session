@@ -1,4 +1,7 @@
 # atk4-session
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1942c3eb6be54d45a3c3fb84989b598f)](https://app.codacy.com/app/abbadon1334/atk4-session?utm_source=github.com&utm_medium=referral&utm_content=abbadon1334/atk4-session&utm_campaign=Badge_Grade_Dashboard)
+
 Session handler for atk4\data\Persistence (@see https://github.com/atk4/data)
 
 initialize **without atk4\ui**
