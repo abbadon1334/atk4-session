@@ -28,7 +28,7 @@ ob_start();
 
 $persistence_filename = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
 
-$p = new \atk4\data\Persistence\SQL('sqlite:'.$persistence_filename);
+$p = new \atk4\data\Persistence_SQL('sqlite:'.$persistence_filename);
 $p->connection->connection()->exec('
     CREATE TABLE IF NOT EXISTS session
     (
