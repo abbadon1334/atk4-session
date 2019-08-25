@@ -16,7 +16,7 @@ class SessionHandlerTest extends TestCase
     use traitPhpServerProcess;
     use traitNeededFiles;
 
-    public static $db_file  = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
+    public static $db_file = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
     public static $jar_file = __DIR__.DIRECTORY_SEPARATOR.'cookie.jar';
 
     public static $jar;
@@ -87,7 +87,7 @@ class SessionHandlerTest extends TestCase
         $response = $this->getClient()->request('GET', '/session/clear/test');
         $this->assertEquals(200, $response->getStatusCode());
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::write';
@@ -107,7 +107,7 @@ class SessionHandlerTest extends TestCase
         preg_match('/^\[VAL\](.*)$/m', $response_body, $output_array);
         $val = $output_array[1] ?? '';
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'.$val;
@@ -123,7 +123,7 @@ class SessionHandlerTest extends TestCase
     {
         $response = $this->getClient()->request('GET', '/session/regenerate');
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         //$assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::updateTimestamp';
@@ -156,7 +156,7 @@ class SessionHandlerTest extends TestCase
         preg_match('/^\[VAL\](.*)$/m', $response_body, $output_array);
         $val = $output_array[1];
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'.$val;
@@ -172,7 +172,7 @@ class SessionHandlerTest extends TestCase
     {
         $response = $this->getClient()->request('GET', '/session/destroy');
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::destroy';
@@ -185,7 +185,7 @@ class SessionHandlerTest extends TestCase
     {
         $response = $this->getClient()->request('GET', '/session/get/test');
 
-        $assert_actions   = [];
+        $assert_actions = [];
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::read';
         $assert_actions[] = '[VAL]'; // <-- val must be null
@@ -213,13 +213,13 @@ class SessionHandlerTest extends TestCase
         $n_cycle = 0;
         while (true) {
             $response = $this->getClient()->request('GET', '/session/sid');
-            $body     = $response->getBody()->getContents();
+            $body = $response->getBody()->getContents();
 
             if (false !== strpos($body, 'atk4\ATK4DBSession\tests\SessionHandlerCallTracer::gc')) {
                 break;
             }
 
-            ++$n_cycle;
+            $n_cycle++;
 
             if ($n_cycle > 1000) {
                 $this->fail('garbage collector not triggered after 1000 calls');
