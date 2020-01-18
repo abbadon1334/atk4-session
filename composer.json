@@ -16,7 +16,7 @@
   },
   "require-dev": {
     "guzzlehttp/guzzle": "6.3.3",
-    "phpunit/phpunit": "5.7.27",
+    "phpunit/phpunit": "8.5.2",
     "phpunit/phpcov": "*",
     "symfony/process": "4.3.3",
     "codacy/coverage": "dev-master",
