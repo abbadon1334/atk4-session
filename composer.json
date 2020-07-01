@@ -15,7 +15,7 @@
     "php": ">7.2.0"
   },
   "require-dev": {
-    "guzzlehttp/guzzle": "6.3.3",
+    "guzzlehttp/guzzle": "6.5.5",
     "phpunit/phpunit": "5.7.27",
     "phpunit/phpcov": "*",
     "symfony/process": "4.3.3",
