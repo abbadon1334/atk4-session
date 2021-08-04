@@ -44,6 +44,9 @@ checks:
     config:
       threshold: 150
 
+exclude_paths:
+- "tests/**"
+- "vendor/**"
 
 #engines:
 #  duplication:
