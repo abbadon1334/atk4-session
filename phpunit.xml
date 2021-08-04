@@ -4,16 +4,15 @@
     <include>
       <directory suffix=".php">./src</directory>
     </include>
+    <exclude>
+      <directory suffix=".php">./demos</directory>
+      <directory suffix=".php">./tests</directory>
+      <directory suffix=".php">./vendor</directory>
+    </exclude>
     <report>
       <php outputFile="build/logs/clover.cov"/>
     </report>
   </coverage>
-  <php>
-    <var name="DB_DSN" value="sqlite::memory:"/>
-    <var name="DB_USER" value="travis"/>
-    <var name="DB_PASSWD" value=""/>
-    <var name="DB_DBNAME" value="dsql_test"/>
-  </php>
   <testsuites>
     <testsuite name="tests">
       <directory>tests</directory>
