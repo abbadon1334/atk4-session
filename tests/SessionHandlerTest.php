@@ -181,7 +181,6 @@ final class SessionHandlerTest extends TestCase
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
@@ -239,7 +238,6 @@ final class SessionHandlerTest extends TestCase
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
