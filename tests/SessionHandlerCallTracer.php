@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace atk4\ATK4DBSession\tests;
+namespace Atk4\ATK4DBSession\Tests;
 
-use atk4\ATK4DBSession\SessionHandler;
+use Atk4\ATK4DBSession\SessionHandler;
 
 /**
  * Class SessionHandlerCallTracer.
@@ -13,9 +13,9 @@ use atk4\ATK4DBSession\SessionHandler;
  */
 class SessionHandlerCallTracer extends SessionHandler
 {
-    public $executed_actions = [];
+    public array $executed_actions = [];
 
-    public function getCallsSequence()
+    public function getCallsSequence(): array
     {
         return $this->executed_actions;
     }
@@ -25,39 +25,52 @@ class SessionHandlerCallTracer extends SessionHandler
         $this->executed_actions = [];
     }
 
-    public function open($save_path, $session_name): bool
+    public function open($path, $name): bool
     {
         $this->addCall(__METHOD__);
 
-        return parent::open($save_path, $session_name);
+        return parent::open($path, $name);
     }
 
-    public function read($session_id): string
+    private function addCall($name): void
     {
-        $this->addCall(__METHOD__);
-
-        return parent::read($session_id);
+        echo $name . PHP_EOL;
+        $this->executed_actions[] = $name;
     }
 
-    public function destroy($session_id): bool
+    public function read($id): string
     {
         $this->addCall(__METHOD__);
 
-        return parent::destroy($session_id);
+        return parent::read($id);
     }
 
-    public function write($session_id, $session_data): bool
+    public function close(): bool
     {
         $this->addCall(__METHOD__);
 
-        return parent::write($session_id, $session_data);
+        return parent::close();
     }
 
-    public function gc($maxlifetime): bool
+    public function destroy($id): bool
     {
         $this->addCall(__METHOD__);
 
-        return parent::gc($maxlifetime);
+        return parent::destroy($id);
+    }
+
+    public function write($id, $data): bool
+    {
+        $this->addCall(__METHOD__);
+
+        return parent::write($id, $data);
+    }
+
+    public function gc($max_lifetime): bool
+    {
+        $this->addCall(__METHOD__);
+
+        return parent::gc($max_lifetime);
     }
 
     public function create_sid(): string
@@ -67,24 +80,18 @@ class SessionHandlerCallTracer extends SessionHandler
         return parent::create_sid();
     }
 
-    public function updateTimestamp($sessionId, $sessionData): bool
+    public function updateTimestamp($id, $data): bool
     {
         $this->addCall(__METHOD__);
-        echo $sessionId.PHP_EOL;
+        echo $id . PHP_EOL;
 
-        return parent::updateTimestamp($sessionId, $sessionData);
+        return parent::updateTimestamp($id, $data);
     }
 
-    public function validateId($sessionId): bool
+    public function validateId($id): bool
     {
         $this->addCall(__METHOD__);
 
-        return parent::validateId($sessionId);
-    }
-
-    private function addCall($name): void
-    {
-        echo $name.PHP_EOL;
-        $this->executed_actions[] = $name;
+        return parent::validateId($id);
     }
 }

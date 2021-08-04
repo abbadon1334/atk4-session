@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace atk4\ATK4DBSession\tests\SessionTraits;
+namespace Atk4\ATK4DBSession\Tests\SessionTraits;
 
+use RuntimeException;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 trait traitBackgroundProcess
 {
@@ -23,6 +25,13 @@ trait traitBackgroundProcess
         static::$process->start();
     }
 
+    /**
+     * Returns a command to run in background.
+     *
+     * @return string
+     */
+    abstract protected static function getCommand();
+
     public static function setTimeoutBackgroundProcess($seconds): void
     {
         static::$process->setTimeout($seconds);
@@ -30,9 +39,9 @@ trait traitBackgroundProcess
 
     public static function verifyBackgroundProcessStarted(): void
     {
-        sleep(1);
+        time_nanosleep(1, 250000);
         if (!static::$process->isRunning()) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Failed to start "%s" in background: %s',
                 static::$process->getCommandLine(),
                 static::$process->getErrorOutput()
@@ -47,11 +56,11 @@ trait traitBackgroundProcess
     {
         try {
             static::$process->signal(9);
-            sleep(1);
+            time_nanosleep(0, 250000);
             static::$process->stop(0);
-            sleep(1);
+            time_nanosleep(0, 250000);
             static::$process->stop(1, 9);
-        } catch (\Throwable $t) {
+        } catch (Throwable $t) {
         }
     }
 
@@ -63,11 +72,4 @@ trait traitBackgroundProcess
         static::$process->clearOutput();
         static::$process->clearErrorOutput();
     }
-
-    /**
-     * Returns a command to run in background.
-     *
-     * @return string
-     */
-    abstract protected static function getCommand();
 }

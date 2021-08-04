@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-include __DIR__.'/../vendor/autoload.php';
+include __DIR__ . '/../vendor/autoload.php';
 
-$p = new \atk4\data\Persistence_SQL('mysql:dbname=atk4;host=localhost', 'atk4', '');
+use Atk4\ATK4DBSession\SessionModel;
+use Atk4\Data\Persistence;
 
-// create the table in database using schema\Migration
-// use it one time to creqate the table, don't migrate on every call, please leave mysql alone ;)
-(new \atk4\schema\Migration\MySQL(new \atk4\ATK4DBSession\SessionModel($p)))->migrate();
+$p = Persistence::connect('mysql:dbname=atk4;host=localhost', 'atk4', '');
 
-// init SessionHandler
-(new \atk4\ATK4DBSession\SessionHandler($p))->executeGC();
+(new \Atk4\ATK4DBSession\SessionHandler(new SessionModel($p)))->gc(3600);

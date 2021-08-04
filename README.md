@@ -50,12 +50,12 @@ CREATE TABLE `session` (
 /**
  * SessionHandler constructor.
  *
- * @param \atk4\data\Persistence    $p                      atk4 data persistence 
+ * @param Persistence    $p                      atk4 data persistence 
  * @param int                       $gc_maxlifetime         seconds until session expire
  * @param float                     $gc_probability         probability of gc for expired sessions 
  * @param array                     $php_session_options    options for session_start
  */
-public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
+use atk4\data\Persistence;public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
 ```
 
 ## $gc_maxlifetime
