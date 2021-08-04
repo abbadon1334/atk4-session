@@ -18,7 +18,7 @@
     "guzzlehttp/guzzle": "6.3.3",
     "phpunit/phpunit": "5.7.27",
     "phpunit/phpcov": "*",
-    "symfony/process": "4.3.3",
+    "symfony/process": "4.4.27",
     "codacy/coverage": "dev-master",
     "codeclimate/php-test-reporter": "*",
     "nikic/fast-route": "1.3.0",
