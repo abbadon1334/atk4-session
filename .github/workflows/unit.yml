@@ -66,4 +66,4 @@ jobs:
           mv build/logs/clover.xml coverage/
           ls -l coverage/
           vendor/bin/phpcov  merge coverage/ --clover build/logs/clover.xml
-          ./cc-test-reporter after-build --coverage-input-type clover
+          ./cc-test-reporter after-build --coverage-input-type clover ${{secrets.CC_TEST_REPORTER_ID}}
