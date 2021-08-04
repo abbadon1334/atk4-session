@@ -5,7 +5,7 @@ declare(strict_types=1);
 // if any file output something session will start and all test will fail
 // this is a normal behaviour of PHP Session
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
 use Atk4\ATK4DBSession\SessionModel;
 use Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer;
@@ -30,17 +30,17 @@ function coverage()
 
     $writer = new PHP();
 
-    $writer->process($coverage, dirname(realpath(__FILE__)) . '/../coverage/' . uniqid('sess', false) . '.cov');
+    $writer->process($coverage, dirname(realpath(__FILE__)).'/../coverage/'.uniqid('sess', false).'.cov');
 }
 
 $coverage->start($_SERVER['SCRIPT_NAME']);
 
 ob_start();
 
-$persistence_filename = __DIR__ . DIRECTORY_SEPARATOR . 'dbsess.sqlite';
+$persistence_filename = __DIR__.DIRECTORY_SEPARATOR.'dbsess.sqlite';
 
 /** @var Atk4\Data\Persistence\Sql $p */
-$p = Persistence::connect('sqlite:' . $persistence_filename);
+$p = Persistence::connect('sqlite:'.$persistence_filename);
 $p->connection->connection()->executeQuery('
     CREATE TABLE IF NOT EXISTS session (
         id integer primary key autoincrement,
@@ -53,13 +53,13 @@ $p->connection->connection()->executeQuery('
 
 $session_options = [
     'use_strict_mode' => 1,
-    'use_trans_sid' => 1,
+    'use_trans_sid'   => 1,
 ];
 
 if (isset($_GET['test_gc'])) {
     $session_options = [
         'gc_maxlifetime' => 60,
-        'gc_divisor' => 10,
+        'gc_divisor'     => 10,
         'gc_probability' => 1,
     ];
 }
@@ -68,7 +68,7 @@ $session = new SessionHandlerCallTracer(new SessionModel($p), $session_options);
 
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r): void {
     $r->addRoute('GET', '/ini_get/{key}', function ($key): void {
-        echo $key . ':' . ((int) ini_get($key)) . PHP_EOL;
+        echo $key.':'.((int) ini_get($key)).PHP_EOL;
     });
 
     $r->addRoute('GET', '/ping', function (): void {
@@ -76,7 +76,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r):
     });
 
     $r->addRoute('GET', '/session/sid', function (): void {
-        echo '[SID]' . session_id() . PHP_EOL;
+        echo '[SID]'.session_id().PHP_EOL;
     });
 
     $r->addRoute('GET', '/session/set/{key}/{value}', function ($key, $value): void {
@@ -85,7 +85,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r):
 
     $r->addRoute('GET', '/session/get/{key}', function ($key): void {
         $val = $_SESSION[$key] ?? null;
-        echo '[VAL]' . $val . PHP_EOL;
+        echo '[VAL]'.$val.PHP_EOL;
     });
 
     $r->addRoute('GET', '/session/clear/{key}', function ($key): void {

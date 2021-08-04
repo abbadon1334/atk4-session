@@ -34,7 +34,7 @@ class SessionHandlerCallTracer extends SessionHandler
 
     private function addCall($name): void
     {
-        echo $name . PHP_EOL;
+        echo $name.PHP_EOL;
         $this->executed_actions[] = $name;
     }
 
@@ -83,7 +83,7 @@ class SessionHandlerCallTracer extends SessionHandler
     public function updateTimestamp($id, $data): bool
     {
         $this->addCall(__METHOD__);
-        echo $id . PHP_EOL;
+        echo $id.PHP_EOL;
 
         return parent::updateTimestamp($id, $data);
     }

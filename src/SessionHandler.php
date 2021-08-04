@@ -118,7 +118,7 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
     public function gc($max_lifetime): bool
     {
         $dt = new DateTime();
-        $dt->modify('-' . $max_lifetime . ' SECONDS');
+        $dt->modify('-'.$max_lifetime.' SECONDS');
 
         $model = (clone $this->model)->unload();
         $model->addCondition('updated_on', '<', $dt->format('Y-m-d H:i:s'));

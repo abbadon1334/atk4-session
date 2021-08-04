@@ -24,8 +24,8 @@ trait traitPhpServerProcess
             'php -S %s:%d%s%s',
             $host,
             $port,
-            $rootDir ? ' -t ' . $rootDir : '',
-            $router ? ' ' . $router : ''
+            $rootDir ? ' -t '.$rootDir : '',
+            $router ? ' '.$router : ''
         );
     }
 
@@ -39,10 +39,10 @@ trait traitPhpServerProcess
     protected static function getPhpServerOptions()
     {
         return [
-            'host' => 'localhost',
-            'port' => 8000,
+            'host'     => 'localhost',
+            'port'     => 8000,
             'root_dir' => null,
-            'router' => null,
+            'router'   => null,
         ];
     }
 }

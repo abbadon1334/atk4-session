@@ -18,8 +18,8 @@ final class SessionHandlerTest extends TestCase
     use traitNeededFiles;
     use traitPhpServerProcess;
 
-    public static string $db_file = __DIR__ . \DIRECTORY_SEPARATOR . 'dbsess.sqlite';
-    public static string $jar_file = __DIR__ . \DIRECTORY_SEPARATOR . 'cookie.jar';
+    public static string $db_file = __DIR__.\DIRECTORY_SEPARATOR.'dbsess.sqlite';
+    public static string $jar_file = __DIR__.\DIRECTORY_SEPARATOR.'cookie.jar';
 
     public static FileCookieJar $jar;
 
@@ -59,10 +59,10 @@ final class SessionHandlerTest extends TestCase
     protected static function getPhpServerOptions()
     {
         return [
-            'host' => 'localhost',
-            'port' => 8888,
+            'host'     => 'localhost',
+            'port'     => 8888,
             'root_dir' => null, //__DIR__.DIRECTORY_SEPARATOR,
-            'router' => __DIR__ . \DIRECTORY_SEPARATOR . 'webserver.php',
+            'router'   => __DIR__.\DIRECTORY_SEPARATOR.'webserver.php',
         ];
     }
 
@@ -93,12 +93,12 @@ final class SessionHandlerTest extends TestCase
     protected function getClient()
     {
         $opts = [
-            'base_uri' => 'http://' . self::getPhpServerOption(
+            'base_uri' => 'http://'.self::getPhpServerOption(
                 'host',
                 'localhost'
-            ) . ':' . self::getPhpServerOption('port', 80),
+            ).':'.self::getPhpServerOption('port', 80),
             'http_errors' => false,
-            'cookies' => self::$jar,
+            'cookies'     => self::$jar,
         ];
 
         $client = new Client($opts);
@@ -158,7 +158,7 @@ final class SessionHandlerTest extends TestCase
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = '[VAL]' . $val;
+        $assert_actions[] = '[VAL]'.$val;
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::updateTimestamp';
         $assert_actions[] = self::$sid;
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
@@ -216,7 +216,7 @@ final class SessionHandlerTest extends TestCase
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = '[VAL]' . $val;
+        $assert_actions[] = '[VAL]'.$val;
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::updateTimestamp';
         $assert_actions[] = self::$sid;
         $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
@@ -311,7 +311,7 @@ final class SessionHandlerTest extends TestCase
                 break;
             }
 
-            ++$n_cycle;
+            $n_cycle++;
 
             if ($n_cycle > 1000) {
                 $this->fail('garbage collector not triggered after 1000 calls, with a probability 1 over 100 calls');
@@ -320,6 +320,6 @@ final class SessionHandlerTest extends TestCase
 
         $this->assertGreaterThanOrEqual(0, $n_cycle);
 
-        echo 'collector trigger was done after ' . $n_cycle . ' calls to collect garbage';
+        echo 'collector trigger was done after '.$n_cycle.' calls to collect garbage';
     }
 }

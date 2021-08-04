@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-include __DIR__ . '/../vendor/autoload.php';
+include __DIR__.'/../vendor/autoload.php';
 
 use Atk4\ATK4DBSession\SessionModel;
 use Atk4\Data\Persistence;
