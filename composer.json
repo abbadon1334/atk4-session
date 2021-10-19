@@ -19,7 +19,7 @@
     "guzzlehttp/guzzle": "6.3.3",
     "friendsofphp/php-cs-fixer": "3.0.0",
     "phpstan/phpstan": "0.12.94",
-    "phpunit/phpunit": "9.5.8",
+    "phpunit/phpunit": "9.5.10",
     "phpunit/phpcov": "*",
     "symfony/process": "*",
     "codeclimate/php-test-reporter": "*",
