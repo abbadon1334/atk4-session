@@ -21,12 +21,6 @@ require_once __DIR__ . '/../init-db.php';
 
 echo 'GITHUB_JOB : ' . getenv('GITHUB_JOB') . "\n\n";
 
-if (getenv('GITHUB_JOB') === 'unit-test') {
-    echo "skip db creation in create-db\n\n";
-
-    return;
-}
-
 (new Migrator(new SessionModel($db)))->create();
 
 echo "import complete!\n\n";
