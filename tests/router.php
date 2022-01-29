@@ -15,7 +15,10 @@ use Atk4\Data\Persistence;
 use FastRoute\RouteCollector;
 use function FastRoute\simpleDispatcher;
 
+ob_start(); // output blocked
+
 $session_options = [
+    'use_strict_mode' => 1,
     'gc_maxlifetime' => 60,
     'gc_divisor' => 10,
     'gc_probability' => isset($_GET['session-options-gc']) ? 1 : 0,

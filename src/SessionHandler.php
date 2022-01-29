@@ -11,10 +11,7 @@ use SessionUpdateTimestampHandlerInterface;
 
 class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
 {
-    private array                $session_options = [
-        'use_strict_mode' => '1',
-        'use_trans_sid' => 1,
-    ];
+    protected array                $session_options = [];
 
     private SessionModel $model;
     private ?SessionModel $entity = null;
@@ -34,7 +31,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
             case PHP_SESSION_DISABLED:
                 // @codeCoverageIgnoreStart - impossible to test
                 throw new Exception('Sessions are disabled on server');
-            // @codeCoverageIgnoreEnd
+                // @codeCoverageIgnoreEnd
         }
 
         session_start($this->session_options);

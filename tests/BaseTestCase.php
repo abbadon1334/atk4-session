@@ -27,8 +27,6 @@ class BaseTestCase extends TestCase
 
     public static FileCookieJar $jar;
 
-    private ?Client $client = null;
-
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -78,7 +76,7 @@ class BaseTestCase extends TestCase
             $cmdArgs[] = 'open_basedir=' . ini_get('open_basedir');
         }
 
-        self::$_process = Process::fromShellCommandline('php ' . implode(' ', array_map('escapeshellarg', $cmdArgs)));
+        self::$_process = new Process(['php', ...$cmdArgs]);
         self::$_process->disableOutput();
         self::$_process->start();
         usleep(250 * 1000);
@@ -86,14 +84,10 @@ class BaseTestCase extends TestCase
 
     protected function getClient(): Client
     {
-        if ($this->client === null) {
-            $this->client = new Client([
-                'base_uri' => 'http://localhost:' . $this->port,
-                'cookies' => self::$jar,
-                'http_errors' => false,
-            ]);
-        }
-
-        return $this->client;
+        return new Client([
+            'base_uri' => 'http://localhost:' . $this->port,
+            'cookies' => self::$jar,
+            'http_errors' => false,
+        ]);
     }
 }

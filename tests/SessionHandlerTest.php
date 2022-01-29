@@ -42,6 +42,7 @@ class SessionHandlerTest extends BaseTestCase
         $status = $response->getStatusCode();
         $this->assertSame(404, $status);
 
+        // Check if use_strict_mode=1 to test Session::validateId
         $response = $this->getClient()->request('GET', '/ini_get/session.use_strict_mode');
         $status = $response->getStatusCode();
         $this->assertSame(200, $status);
