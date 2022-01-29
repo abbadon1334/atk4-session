@@ -1,10 +1,19 @@
-# atk4-session
+# ATK4 Session Handler
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1942c3eb6be54d45a3c3fb84989b598f)](https://app.codacy.com/app/abbadon1334/atk4-session?utm_source=github.com&utm_medium=referral&utm_content=abbadon1334/atk4-session&utm_campaign=Badge_Grade_Dashboard)
+[![License](https://img.shields.io/github/license/abbadon1334/atk4-session.svg)](https://github.com/abbadon1334/atk4-session)
+[![Maintainability](https://img.shields.io/codeclimate/maintainability/abbadon1334/atk4-session.svg)](https://codeclimate.com/github/abbadon1334/atk4-session)
+[![Maintainability](https://img.shields.io/codeclimate/maintainability-percentage/abbadon1334/atk4-session.svg)](https://codeclimate.com/github/abbadon1334/atk4-session)
+[![Technical Debt](https://img.shields.io/codeclimate/tech-debt/abbadon1334/atk4-session.svg)](https://codeclimate.com/github/abbadon1334/atk4-session)
+[![Test Coverage](https://img.shields.io/codecov/c/github/abbadon1334/atk4-session/master.svg)](https://codecov.io/github/abbadon1334/atk4-session?branch=master)
+[![PHP version](https://img.shields.io/packagist/php-v/abbadon1334/atk4-session.svg)](https://packagist.org/packages/abbadon1334/atk4-session)
 
-Session handler for atk4\data\Persistence (@see https://github.com/atk4/data)
+Session handler for Atk4\Data (@see https://github.com/atk4/data)
 
-initialize **without atk4\ui**
+### Install
+
+`composer require abbadon1334/atk4-session`
+
+### Initialize **without atk4\ui**
 
 ``` php
 
@@ -12,21 +21,15 @@ initialize **without atk4\ui**
 include '../vendor/autoload.php';
 
 // create pesistence
-$db = \atk4\data\Persistence::connect('mysql://root:password@localhost/atk4');
+$db = \Atk4\data\Persistence::connect('mysql://root:password@localhost/atk4');
 
 // init session handler
-new \atk4\ATK4DBSession\SessionHandler($p);
-```
-
-initialize **with atk4\ui in App::init method**
-
-``` php
-$this->add(new AppSessionHandler());
+new \Atk4\ATK4DBSession\SessionHandler($p, [/* session options */]);
 ```
 
 *Create session table using atk4\schema*
 ``` php
-(new \atk4\schema\Migration\MySQL(new \atk4\ATK4DBSession\SessionModel($p)))->migrate();
+(new \Atk4\Data\Schema\Migrator(new \atk4\ATK4DBSession\SessionModel($p)))->create();
 ```
 
 *OR*
@@ -44,33 +47,11 @@ CREATE TABLE `session` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 ```
 
-## Constructor of SessionHandler
+## Session GC 
 
-```php
-/**
- * SessionHandler constructor.
- *
- * @param Persistence    $p                      atk4 data persistence 
- * @param int                       $gc_maxlifetime         seconds until session expire
- * @param float                     $gc_probability         probability of gc for expired sessions 
- * @param array                     $php_session_options    options for session_start
- */
-use atk4\data\Persistence;public function __construct($p, $gc_maxlifetime = null, $gc_probability = null, $php_session_options = [])
-```
-
-## $gc_maxlifetime
-max session lifetime before eligible to gc, default value is set to 60 * 60 secods = 1 hour
-
-## $gc_probability
-percentage of probability of gc expired sessions, default is set to 1/1000 request.
-You have to consider few things for tweaking this value, because it must be sized to your project
-
-if you use InnoDB deletes are slow and if set it low too many calls will have a little delay, if you set too high few calls will have a huge delay.  
-
-Considering disable it setting this value to *false* and use an alternative method like cronJob with frequency */2 * * * * that calls code like example : demos/cronjob.php
-
-
- 
+if you use InnoDB deletes are slow, so the best option for huge request application is to set a cronjob which run every 
+2 minutes, you can find an example in : `demos/example/cronjob.example.php`.
+When you instantiate the SessionHandler, if you use the crojob, set the gc_probability option to 0 to disable automatic triggering of gc.   
 
 ### Why i need to replace the default PHP Session Handler with this?
 
