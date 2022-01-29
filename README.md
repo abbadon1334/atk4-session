@@ -37,14 +37,14 @@ new \Atk4\ATK4DBSession\SessionHandler($p, [/* session options */]);
 *Create session table with SQL query*
 ``` sql
 CREATE TABLE `session` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `data` text COLLATE utf8_unicode_ci,
-  `created_on` timestamp NULL DEFAULT NULL,
-  `updated_on` timestamp NULL DEFAULT NULL,
+  `id` bigint() NOT NULL AUTO_INCREMENT,
+  `session_id` varbinary(255) DEFAULT NULL,
+  `data` blob,
+  `created_on` datetime(6) NULL DEFAULT NULL,
+  `updated_on` datetime(6) NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `session_id` (`session_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+) ENGINE=InnoDB;
 ```
 
 ## Session GC 
