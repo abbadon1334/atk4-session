@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Atk4\Outbox\Demos;
+namespace Atk4\ATK4DBSession\Demos;
 
 use Atk4\Core\Exception;
 use Atk4\Data\Persistence;

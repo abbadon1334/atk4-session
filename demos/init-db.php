@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Atk4\Outbox\Demos;
+namespace Atk4\ATK4DBSession\Demos;
 
 try {
     require_once file_exists(__DIR__ . '/db.php')
