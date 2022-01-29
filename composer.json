@@ -2,7 +2,6 @@
   "name": "abbadon1334/atk4-session",
   "description": "php session using atk4 data handler",
   "keywords": ["session_save_handler", "atk4", "data", "dsql"],
-  "minimum-stability": "dev",
   "license": "MIT",
   "authors": [
     {
@@ -11,20 +10,29 @@
     }
   ],
   "require": {
-    "atk4/data": "2.4.0",
-    "php": ">7.3.0",
-    "ramsey/uuid": "4.x-dev"
+    "ext-pdo": "*",
+    "php": ">=7.4 <8.2",
+    "atk4/data": "dev-develop"
+  },
+  "require-release": {
+    "ext-pdo": "*",
+    "php": ">=7.4 <8.2",
+    "atk4/data": "~3.1.0"
   },
   "require-dev": {
+    "nikic/fast-route": "1.3.0",
     "guzzlehttp/guzzle": "6.3.3",
-    "friendsofphp/php-cs-fixer": "3.0.0",
-    "phpstan/phpstan": "0.12.94",
-    "phpunit/phpunit": "9.5.8",
-    "phpunit/phpcov": "*",
-    "symfony/process": "*",
-    "codeclimate/php-test-reporter": "*",
-    "nikic/fast-route": "1.3.0"
+    "ergebnis/composer-normalize": "^2.13",
+    "friendsofphp/php-cs-fixer": "^3.0",
+    "johnkary/phpunit-speedtrap": "^3.3",
+    "phpstan/extension-installer": "^1.1",
+    "phpstan/phpstan": "^1.0",
+    "phpstan/phpstan-deprecation-rules": "^1.0",
+    "phpunit/phpunit": "^9.5.5",
+    "symfony/console": "^4.4.30 || ^5.3.7"
   },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "autoload": {
     "psr-4": {
       "Atk4\\ATK4DBSession\\": "src"
@@ -35,7 +43,7 @@
       "Atk4\\ATK4DBSession\\Tests\\" : "tests"
     }
   },
-  "scripts": {
-    "fix": "php-cs-fixer fix --config=.php_cs.dist demos src tests"
+  "config": {
+    "sort-packages": true
   }
 }

@@ -4,67 +4,33 @@ declare(strict_types=1);
 
 namespace Atk4\ATK4DBSession\Tests;
 
-use Atk4\ATK4DBSession\Tests\SessionTraits\traitNeededFiles;
-use Atk4\ATK4DBSession\Tests\SessionTraits\traitPhpServerProcess;
-use GuzzleHttp\Client;
-use GuzzleHttp\Cookie\FileCookieJar;
-use PHPUnit\Framework\TestCase;
-
-/**
- * @internal
- */
-final class SessionHandlerTest extends TestCase
+class SessionHandlerTest extends BaseTestCase
 {
-    use traitNeededFiles;
-    use traitPhpServerProcess;
+    protected const TRACE_OPEN_VALIDATE_READ = [
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open',
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId',
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read',
+    ];
 
-    public static string $db_file = __DIR__ . \DIRECTORY_SEPARATOR . 'dbsess.sqlite';
-    public static string $jar_file = __DIR__ . \DIRECTORY_SEPARATOR . 'cookie.jar';
+    protected const TRACE_WRITE = [
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write',
+    ];
 
-    public static FileCookieJar $jar;
+    protected const TRACE_UPDATE_TIMESTAMP = [
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::updateTimestamp',
+    ];
 
-    public static string $sid;
+    protected const TRACE_CLOSE = [
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close',
+    ];
 
-    public static function setUpBeforeClass(): void
-    {
-        self::createNeededFiles();
+    protected const TRACE_DESTROY = [
+        'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::destroy',
+    ];
 
-        self::$jar = new FileCookieJar(self::$jar_file);
-
-        self::startBackgroundProcess();
-
-        // any output will trigger sessions, best to remove output of any type
-        //SessionHandlerTest::clearBackgroundProcessOutput();
-        self::verifyBackgroundProcessStarted();
-
-        parent::setUpBeforeClass();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        self::stopBackgroundProcess();
-        self::removeNeededFiles();
-
-        parent::tearDownAfterClass();
-    }
-
-    protected static function getNeededFiles()
-    {
-        return [
-            self::$db_file,
-            self::$jar_file,
-        ];
-    }
-
-    protected static function getPhpServerOptions()
-    {
-        return [
-            'host' => 'localhost',
-            'port' => 8888,
-            'root_dir' => null, //__DIR__.DIRECTORY_SEPARATOR,
-            'router' => __DIR__ . \DIRECTORY_SEPARATOR . 'webserver.php',
-        ];
-    }
+    protected const TRACE_END = [
+        '',
+    ];
 
     public function testServer(): void
     {
@@ -72,156 +38,162 @@ final class SessionHandlerTest extends TestCase
         $status = $response->getStatusCode();
         $this->assertSame(200, $status);
 
-        $response = $this->getClient()->request('GET', '/give404');
+        $response = $this->getClient()->request('GET', '/no-route-return-404');
         $status = $response->getStatusCode();
         $this->assertSame(404, $status);
 
         $response = $this->getClient()->request('GET', '/ini_get/session.use_strict_mode');
         $status = $response->getStatusCode();
         $this->assertSame(200, $status);
-        $this->assertStringContainsString('session.use_strict_mode:1', (string) $response->getBody()->getContents());
-
-        $response = $this->getClient()->request('GET', '/ini_get/session.use_trans_sid');
-        $status = $response->getStatusCode();
-        $this->assertSame(200, $status);
-        $this->assertStringContainsString('session.use_trans_sid:1', (string) $response->getBody()->getContents());
-
-        // get SID
-        self::$sid = $this->getSid();
+        $this->assertStringContainsString('session.use_strict_mode:1', (string) $response->getBody());
     }
 
-    protected function getClient()
-    {
-        $opts = [
-            'base_uri' => 'http://' . self::getPhpServerOption(
-                'host',
-                'localhost'
-            ) . ':' . self::getPhpServerOption('port', 80),
-            'http_errors' => false,
-            'cookies' => self::$jar,
-        ];
-
-        $client = new Client($opts);
-
-        return $client;
-    }
-
-    public function getSid()
+    protected function getSid(): string
     {
         $response = $this->getClient()->request('GET', '/session/sid');
         $this->assertSame(200, $response->getStatusCode());
 
         $output_array = [];
-        preg_match('/^\[SID](.*)$/m', (string) $response->getBody()->getContents(), $output_array);
+        preg_match('/^\[SID](.*)$/m', (string) $response->getBody(), $output_array);
 
-        return $output_array[1] ?? '';
-    }
-
-    public function testSID(): void
-    {
-        $sid = $this->getSid();
+        $sid = $output_array[1] ?? '';
 
         $this->assertNotEmpty($sid);
-        $this->assertSame($sid, self::$sid);
+
+        return $sid;
     }
 
-    public function testSessionSetVar(): void
+    protected function requestSessionVarUnset(string $name): void
     {
-        $response = $this->getClient()->request('GET', '/session/clear/test');
+        $response = $this->getClient()->request('GET', '/session/unset/' . $name);
         $this->assertSame(200, $response->getStatusCode());
 
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
+        $response_body = (string) $response->getBody();
 
-        $response = $this->getClient()->request('GET', '/session/set/test/1334');
-        $this->assertSame(200, $response->getStatusCode());
+        $steps = implode(PHP_EOL, array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        ));
 
-        $this->assertSame(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
+        $this->assertSame($steps, $response_body);
     }
 
-    public function testSessionGetVar(): void
+    protected function requestSessionVarSet(string $name, string $value): void
     {
-        $response = $this->getClient()->request('GET', '/session/get/test');
+        $response = $this->getClient()->request('GET', '/session/set/' . $name . '/' . $value);
         $this->assertSame(200, $response->getStatusCode());
 
-        $response_body = (string) $response->getBody()->getContents();
+        $response_body = (string) $response->getBody();
+
+        $steps = implode(PHP_EOL, array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        ));
+
+        // if called twice trigger an UPDATE_TIMESTAMP in place of WRITE
+        if (strpos($response_body, self::TRACE_UPDATE_TIMESTAMP[0]) !== false) {
+            $steps = implode(PHP_EOL, array_merge(
+                self::TRACE_OPEN_VALIDATE_READ,
+                self::TRACE_UPDATE_TIMESTAMP,
+                self::TRACE_CLOSE,
+                self::TRACE_END
+            ));
+        }
+
+        $this->assertSame($steps, $response_body);
+    }
+
+    protected function requestSessionVarGet(string $name): string
+    {
+        $actual_sid = $this->getSid();
+
+        $response = $this->getClient()->request('GET', '/session/get/' . $name);
+        $this->assertSame(200, $response->getStatusCode());
+
+        $response_body = (string) $response->getBody();
+
         $output_array = [];
         preg_match('/^\[VAL](.*)$/m', $response_body, $output_array);
-        $val = $output_array[1] ?? '';
+        $value = $output_array[1] ?? '';
 
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = '[VAL]' . $val;
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::updateTimestamp';
-        $assert_actions[] = self::$sid;
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
+        $steps = implode(PHP_EOL, array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            ['[VAL]' . $value],
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        ));
+
+        // if called twice trigger an UPDATE_TIMESTAMP in place of WRITE
+        if (strpos($response_body, self::TRACE_UPDATE_TIMESTAMP[0]) !== false) {
+            $steps = implode(PHP_EOL, array_merge(
+                self::TRACE_OPEN_VALIDATE_READ,
+                ['[VAL]' . $value],
+                self::TRACE_UPDATE_TIMESTAMP,
+                self::TRACE_CLOSE,
+                self::TRACE_END
+            ));
+        }
+
+        $this->assertSame($steps, $response_body);
+
+        return $value;
+    }
+
+    public function testGetSetGet(): void
+    {
+        $this->requestSessionVarUnset('test');
+
+        $this->assertEmpty($this->requestSessionVarGet('test'));
+
+        $this->requestSessionVarSet('test', '1334');
+
+        $session_value = $this->requestSessionVarGet('test');
+
+        $this->assertSame('1334', $session_value);
+
+        $this->requestSessionVarUnset('test');
+
+        $this->assertEmpty($this->requestSessionVarGet('test'));
+    }
+
+    protected function requestSessionRegenerate(): void
+    {
+        $response = $this->getClient()->request('GET', '/session/regenerate');
+        $this->assertSame(200, $response->getStatusCode());
+
+        $response_body = (string) $response->getBody();
+
+        $assert_actions = array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        );
 
         $this->assertSame(implode(PHP_EOL, $assert_actions), $response_body);
     }
 
     public function testSessionRegenerate(): void
     {
-        $response = $this->getClient()->request('GET', '/session/regenerate');
-        $this->assertSame(200, $response->getStatusCode());
+        $this->requestSessionVarSet('test', 'before-regenerate');
 
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
+        $sid_before_regenerate = $this->getSid();
 
-        $this->assertSame(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
-    }
+        $this->requestSessionRegenerate();
 
-    public function testSessionGetNewSidAfterRegenerate(): void
-    {
-        $new_sid = $this->getSid();
+        $sid_after_generate = $this->getSid();
 
-        $this->assertNotEmpty($new_sid);
-        $this->assertNotEmpty(self::$sid);
+        $this->assertNotSame($sid_before_regenerate, $sid_after_generate);
 
-        $this->assertNotSame($new_sid, self::$sid);
-
-        self::$sid = $new_sid;
-    }
-
-    public function testSessionGetVarAfterRegenerate(): void
-    {
-        $response = $this->getClient()->request('GET', '/session/get/test');
-        $this->assertSame(200, $response->getStatusCode());
-
-        $response_body = (string) $response->getBody()->getContents();
-        $output_array = [];
-        preg_match('/^\[VAL](.*)$/m', $response_body, $output_array);
-        $val = $output_array[1];
-
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = '[VAL]' . $val;
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::updateTimestamp';
-        $assert_actions[] = self::$sid;
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
-
-        $this->assertSame(implode(PHP_EOL, $assert_actions), $response_body);
+        $this->assertSame('before-regenerate', $this->requestSessionVarGet('test'));
     }
 
     public function testSessionRegenerateWithDelete(): void
@@ -229,60 +201,46 @@ final class SessionHandlerTest extends TestCase
         $response = $this->getClient()->request('GET', '/session/regenerate/delete_old');
         $this->assertSame(200, $response->getStatusCode());
 
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::destroy';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
+        $response_body = (string) $response->getBody();
 
-        $this->assertSame(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
+        $assert_actions = array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_DESTROY,
+            self::TRACE_CLOSE,
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_WRITE,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        );
+
+        $this->assertSame(implode(PHP_EOL, $assert_actions), $response_body);
     }
 
     // SETUP FUNCTIONS
 
     public function testSessionDestroy(): void
     {
+        $value = 'to-be-destroyed';
+        $this->requestSessionVarSet('value-before-destroy', $value);
+
+        $this->assertSame($value, $this->requestSessionVarGet('value-before-destroy'));
+
         $response = $this->getClient()->request('GET', '/session/destroy');
         $this->assertSame(200, $response->getStatusCode());
 
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::destroy';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
+        $response_body = (string) $response->getBody();
 
-        $this->assertSame(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
+        $assert_actions = array_merge(
+            self::TRACE_OPEN_VALIDATE_READ,
+            self::TRACE_DESTROY,
+            self::TRACE_CLOSE,
+            self::TRACE_END
+        );
+
+        $this->assertSame(implode(PHP_EOL, $assert_actions), $response_body);
+
+        $this->assertEmpty($this->requestSessionVarGet('value-before-destroy'));
     }
-
-    public function testSessionGetVarAfterDestroy(): void
-    {
-        $response = $this->getClient()->request('GET', '/session/get/test');
-        $this->assertSame(200, $response->getStatusCode());
-
-        $assert_actions = [];
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::open';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::validateId';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::create_sid';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::read';
-        $assert_actions[] = '[VAL]'; // <-- val must be null
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::write';
-        $assert_actions[] = 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::close';
-        $assert_actions[] = '';
-
-        $this->assertSame(implode(PHP_EOL, $assert_actions), (string) $response->getBody()->getContents());
-    }
-
-    // CLIENT
 
     /**
      * Test triggering of Garbage collector.
@@ -301,9 +259,9 @@ final class SessionHandlerTest extends TestCase
     {
         $n_cycle = 0;
         while (true) {
-            $response = $this->getClient()->request('GET', '/session/sid?test_gc=1');
+            $response = $this->getClient()->request('GET', '/session/gc-trigger?session-options-gc=1');
             $this->assertSame(200, $response->getStatusCode());
-            $body = $response->getBody()->getContents();
+            $body = (string) $response->getBody();
 
             if (strpos($body, 'Atk4\ATK4DBSession\Tests\SessionHandlerCallTracer::gc') !== false) {
                 break;

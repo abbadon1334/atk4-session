@@ -1,8 +1,7 @@
-docs/build
 /composer.lock
 /build
 /vendor
 .DS_Store
 /.idea
-dbsess.sqlite
 cookie.jar
+/demos/_demo-data/db.sqlite

@@ -10,27 +10,25 @@ use DateTime;
 class SessionModel extends Model
 {
     public $table = 'session';
-    public $id_field = 'id';
 
     protected function init(): void
     {
         parent::init();
 
-        $this->addFields([
-            ['session_id', 'type' => 'string'],
-            ['data', 'type' => 'text'], // < === must be text or other big data table
-            ['created_on', 'type' => 'datetime', 'system' => true],
-            ['updated_on', 'type' => 'datetime', 'system' => true],
-        ]);
+        $this->addField('session_id', ['type' => 'string']);
 
-        $this->onHook(Model::HOOK_BEFORE_SAVE, function (self $m, bool $is_update) {
-            $dt_formatted = (new DateTime())->format('Y-m-d H:i:s');
+        // N.B. must be text to store whole serialized session
+        $this->addField('data', ['type' => 'text']);
 
-            if (!$is_update) {
-                $m->set('created_on', $dt_formatted);
-            }
+        $this->addField('created_on', ['type' => 'datetime', 'system' => true]);
+        $this->addField('updated_on', ['type' => 'datetime', 'system' => true]);
 
-            $m->set('updated_on', $dt_formatted);
+        $this->onHook(Model::HOOK_BEFORE_INSERT, function (self $m, array &$data) {
+            $data['created_on'] = new DateTime();
+        });
+
+        $this->onHook(Model::HOOK_BEFORE_UPDATE, function (self $m, array &$data) {
+            $data['updated_on'] = new DateTime();
         });
     }
 }

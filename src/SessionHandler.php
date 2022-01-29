@@ -6,17 +6,18 @@ namespace Atk4\ATK4DBSession;
 
 use DateTime;
 use Exception;
-use Ramsey\Uuid\Uuid;
 use SessionHandlerInterface;
-use SessionIdInterface;
 use SessionUpdateTimestampHandlerInterface;
 
-class SessionHandler implements SessionHandlerInterface, SessionIdInterface, SessionUpdateTimestampHandlerInterface
+class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
 {
-    protected SessionModel $model;
     private array                $session_options = [
         'use_strict_mode' => '1',
+        'use_trans_sid' => 1,
     ];
+
+    private SessionModel $model;
+    private ?SessionModel $entity = null;
 
     public function __construct(SessionModel $model, array $session_options = [])
     {
@@ -32,7 +33,7 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
                 throw new Exception('session already started, cannot start Session Handler');
             case PHP_SESSION_DISABLED:
                 // @codeCoverageIgnoreStart - impossible to test
-                throw new Exception(['Sessions are disabled on server']);
+                throw new Exception('Sessions are disabled on server');
             // @codeCoverageIgnoreEnd
         }
 
@@ -40,200 +41,141 @@ class SessionHandler implements SessionHandlerInterface, SessionIdInterface, Ses
     }
 
     /**
-     * Close the session.
+     * Closes the current session.
      *
-     * @see  https://php.net/manual/en/sessionhandler.close.php
-     *
-     * @return bool <p>
-     *              The return value (usually TRUE on success, FALSE on failure).
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
-     *
-     * @since 5.4
+     * This function is automatically executed when closing the session, or explicitly via session_write_close().
+     * Return value should be true for success or false for failure.
      */
     public function close(): bool
     {
-        $this->model->save();
-
-        return true;
-    }
-
-    /**
-     * Return a new session ID.
-     *
-     * @see https://php.net/manual/en/sessionhandler.create-sid.php
-     *
-     * @return string <p>
-     *                A session ID valid for the default session handler.
-     *                </p>
-     *
-     * @since 5.5.1
-     */
-    public function create_sid(): string
-    {
-        return Uuid::uuid4()->toString();
-    }
-
-    /**
-     * Destroy a session.
-     *
-     * @see https://php.net/manual/en/sessionhandler.destroy.php
-     *
-     * @param string $id the session ID being destroyed
-     *
-     * @return bool <p>
-     *              The return value (usually TRUE on success, FALSE on failure).
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
-     *
-     * @since 5.4
-     */
-    public function destroy($id): bool
-    {
-        if ($this->model->loaded() && $this->model->get('session_id') === $id) {
-            $this->model->delete();
-            $this->model = $this->model->newInstance();
+        if (!empty($this->entity->get())) {
+            $this->entity->save();
         }
 
         return true;
     }
 
     /**
-     * Cleanup old sessions.
+     * Destroys a session.
      *
-     * @see https://php.net/manual/en/sessionhandler.gc.php
-     *
-     * @param int $max_lifetime <p>
-     *                          Sessions that have not updated for
-     *                          the last maxlifetime seconds will be removed.
-     *                          </p>
-     *
-     * @return bool <p>
-     *              The return value (usually TRUE on success, FALSE on failure).
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
-     *
-     * @since 5.4
+     * Called by session_regenerate_id() (with $destroy = TRUE), session_destroy() and when session_decode() fails.
+     * Return value should be true for success or false for failure.
      */
-    public function gc($max_lifetime): bool
+    public function destroy($id): bool
     {
-        $dt = new DateTime();
-        $dt->modify('-' . $max_lifetime . ' SECONDS');
+        if ($this->entity->isLoaded() && $this->entity->get('session_id') === $id) {
+            $this->entity->delete();
+            //$this->entity = $this->model->createEntity();
+        }
 
-        $model = (clone $this->model)->unload();
-        $model->addCondition('updated_on', '<', $dt->format('Y-m-d H:i:s'));
-        $model->each(function (SessionModel $m) {
-            $m->delete();
-        });
+        $this->entity = $this->model->createEntity();
 
         return true;
     }
 
     /**
-     * Initialize session.
+     * Cleans up expired sessions.
      *
-     * @see https://php.net/manual/en/sessionhandler.open.php
+     * Called by session_start(), based on session.gc_divisor, session.gc_probability and session.gc_maxlifetime settings.
      *
-     * @param string $path the path where to store/retrieve the session
-     * @param string $name the session name
+     * Return value should be true for success or false for failure.
      *
-     * @return bool <p>
-     *              The return value (usually TRUE on success, FALSE on failure).
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
+     * @return int|bool
+     */
+    public function gc($max_lifetime)
+    {
+        $dt = (new DateTime())->modify('-' . $max_lifetime . ' SECONDS');
+
+        $count = 0;
+        foreach ((clone $this->model)->addCondition('updated_on', '<', $dt)->getIterator() as $m) {
+            $m->delete();
+            ++$count;
+        }
+
+        return PHP_MAJOR_VERSION >= 8 ? $count : true;
+    }
+
+    /**
+     * Re-initialize existing session, or creates a new one.
+     * Called when a session starts or when session_start() is invoked.
      *
-     * @since 5.4
+     * Return value should be true for success or false for failure.
      */
     public function open($path, $name): bool
     {
+        $this->entity = $this->model->createEntity();
+
         return true;
     }
 
     /**
-     * Read session data.
+     * Reads the session data from the session storage, and returns the results.
+     * Before this method is called SessionHandlerInterface::open() is invoked.
      *
-     * @see https://php.net/manual/en/sessionhandler.read.php
+     * The data returned by this method will be decoded internally by PHP using
+     * the unserialization method specified in session.serialize_handler.
+     * The resulting data will be used to populate the $_SESSION superglobal.
      *
-     * @param string $id the session id to read data for
-     *
-     * @return string <p>
-     *                Returns an encoded string of the read data.
-     *                If nothing was read, it must return an empty string.
-     *                Note this value is returned internally to PHP for processing.
-     *                </p>
-     *
-     * @since 5.4
+     * Return value should be the session data or an empty string.
      */
     public function read($id): string
     {
-        $model = $this->model->newInstance()->addCondition('session_id', $id);
-        $this->model = $model->tryLoadAny();
+        $this->entity = $this->model->tryLoadBy('session_id', $id);
+        $this->entity->set('session_id', $id);
 
-        return $this->model->loaded() ? (string) $this->model->get('data') : '';
+        // empty string in case of null is extremely important don't remove.
+        return (string) ($this->entity->get('data') ?? '');
     }
 
     /**
-     * Write session data.
+     * Writes the session data to the session storage.
      *
-     * @see https://php.net/manual/en/sessionhandler.write.php
+     * SessionHandlerInterface::close() is called immediately after this function.
+     * This method encodes the session data from the $_SESSION superglobal
+     * to a serialized string and passes this along with the session ID to this method for storage.
+     * The serialization method used is specified in the session.serialize_handler ini setting.
      *
-     * @param string $id   the session id
-     * @param string $data <p>
-     *                     The encoded session data. This data is the
-     *                     result of the PHP internally encoding
-     *                     the $_SESSION superglobal to a serialized
-     *                     string and passing it as this parameter.
-     *                     Please note sessions use an alternative serialization method.
-     *                     </p>
-     *
-     * @return bool <p>
-     *              The return value (usually TRUE on success, FALSE on failure).
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
-     *
-     * @since 5.4
+     * Return value should be true for success or false for failure.
      */
     public function write($id, $data): bool
     {
-        $this->model->set('data', $data);
+        // write everything even empty string
+        // correct settings of GC will clear unused sessions
+        $this->entity->set('data', $data);
 
         return true;
     }
 
     /**
-     * Validate session id.
+     * Validate session ID.
      *
-     * @param string $id The session id
+     * This method is called when the session.use_strict_mode ini setting is set to 1
+     * in order to avoid uninitialized session ID.
+     * The validity of session ID is checked on starting and on regenerating
+     * if strict mode is enabled.
      *
-     * @return bool <p>
-     *              Note this value is returned internally to PHP for processing.
-     *              </p>
+     * Return value should be true if the session ID is valid otherwise false. If false is returned a new session id will be generated.
      */
     public function validateId($id): bool
     {
-        $model = (clone $this->model)->newInstance()->addCondition('session_id', $id)->tryLoadAny();
-
-        return $model->tryLoadAny()->loaded();
+        return (clone $this->model)->addCondition('session_id', $id)->tryLoadOne()->isLoaded();
     }
 
     /**
      * Update timestamp of a session.
      *
-     * @param string $id   The session id
-     * @param string $data <p>
-     *                     The encoded session data. This data is the
-     *                     result of the PHP internally encoding
-     *                     the $_SESSION superglobal to a serialized
-     *                     string and passing it as this parameter.
-     *                     Please note sessions use an alternative serialization method.
-     *                     </p>
+     * This method is called when the session.lazy_write ini setting is set to 1
+     * and no changes are made to session variables. In other words, when the session
+     * need to be closed, if lazy_write mode is enabled and $_SESSION is not modified,
+     * this method is called instead of SessionHandlerInterface::write()
+     * in order to update session timestamp without rewriting all session data.
      *
-     * @return bool
+     * Return value should be true for success or false for failure.
      */
     public function updateTimestamp($id, $data)
     {
-        $this->model->set('data', $data);
-        $this->model->set('updated_on', new DateTime());
+        $this->entity->set('data', $data);
+        $this->entity->set('updated_on', new DateTime());
 
         return true;
     }

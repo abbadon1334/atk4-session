@@ -32,7 +32,7 @@ class SessionHandlerCallTracer extends SessionHandler
         return parent::open($path, $name);
     }
 
-    private function addCall($name): void
+    private function addCall(string $name): void
     {
         echo $name . PHP_EOL;
         $this->executed_actions[] = $name;
@@ -56,7 +56,7 @@ class SessionHandlerCallTracer extends SessionHandler
     {
         $this->addCall(__METHOD__);
 
-        return parent::destroy($id);
+        return parent::destroy($id); // threshold
     }
 
     public function write($id, $data): bool
@@ -66,24 +66,16 @@ class SessionHandlerCallTracer extends SessionHandler
         return parent::write($id, $data);
     }
 
-    public function gc($max_lifetime): bool
+    public function gc($max_lifetime)
     {
         $this->addCall(__METHOD__);
 
         return parent::gc($max_lifetime);
     }
 
-    public function create_sid(): string
-    {
-        $this->addCall(__METHOD__);
-
-        return parent::create_sid();
-    }
-
     public function updateTimestamp($id, $data): bool
     {
         $this->addCall(__METHOD__);
-        echo $id . PHP_EOL;
 
         return parent::updateTimestamp($id, $data);
     }
