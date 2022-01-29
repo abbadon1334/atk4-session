@@ -77,16 +77,21 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      *
      * Return value should be true for success or false for failure.
      *
-     * @return int|bool
+     * @return bool|int
      */
+    #[\ReturnTypeWillChange]
     public function gc($max_lifetime)
     {
-        $dt = (new DateTime())->modify('-' . $max_lifetime . ' SECONDS');
+        try {
+            $dt = (new DateTime())->modify('-' . $max_lifetime . ' SECONDS');
 
-        $count = 0;
-        foreach ((clone $this->model)->addCondition('updated_on', '<', $dt)->getIterator() as $m) {
-            $m->delete();
-            ++$count;
+            $count = 0;
+            foreach ((clone $this->model)->addCondition('updated_on', '<', $dt)->getIterator() as $m) {
+                $m->delete();
+                ++$count;
+            }
+        } catch (\Throwable $t) {
+            return false;
         }
 
         return PHP_MAJOR_VERSION >= 8 ? $count : true;
@@ -169,10 +174,15 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      *
      * Return value should be true for success or false for failure.
      */
+    #[\ReturnTypeWillChange]
     public function updateTimestamp($id, $data)
     {
-        $this->entity->set('data', $data);
-        $this->entity->set('updated_on', new DateTime());
+        try {
+            $this->entity->set('data', $data);
+            $this->entity->set('updated_on', new DateTime());
+        } catch (\Throwable $t) {
+            return false;
+        }
 
         return true;
     }
