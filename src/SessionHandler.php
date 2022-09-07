@@ -123,7 +123,11 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     public function read($id): string
     {
         $this->entity = $this->model->tryLoadBy('session_id', $id);
-        $this->entity->set('session_id', $id);
+
+        if (null === $this->entity) {
+            $this->entity = $this->model->createEntity();
+            $this->entity->set('session_id', $id);
+        }
 
         // empty string in case of null is extremely important don't remove.
         return (string) ($this->entity->get('data') ?? '');
@@ -160,7 +164,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function validateId($id): bool
     {
-        return (clone $this->model)->addCondition('session_id', $id)->tryLoadOne()->isLoaded();
+        return (clone $this->model)->addCondition('session_id', $id)->tryLoadAny() !== null;
     }
 
     /**
