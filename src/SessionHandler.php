@@ -62,7 +62,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     {
         if ($this->entity->isLoaded() && $this->entity->get('session_id') === $id) {
             $this->entity->delete();
-            //$this->entity = $this->model->createEntity();
+            // $this->entity = $this->model->createEntity();
         }
 
         $this->entity = $this->model->createEntity();
@@ -124,7 +124,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     {
         $this->entity = $this->model->tryLoadBy('session_id', $id);
 
-        if (null === $this->entity) {
+        if ($this->entity === null) {
             $this->entity = $this->model->createEntity();
             $this->entity->set('session_id', $id);
         }

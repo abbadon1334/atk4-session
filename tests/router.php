@@ -13,6 +13,7 @@ require_once __DIR__ . '/../demos/init-unit-tests.php';
 use Atk4\ATK4DBSession\SessionModel;
 use Atk4\Data\Persistence;
 use FastRoute\RouteCollector;
+
 use function FastRoute\simpleDispatcher;
 
 ob_start(); // output blocked

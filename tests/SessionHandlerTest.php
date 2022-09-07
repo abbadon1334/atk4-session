@@ -277,6 +277,6 @@ class SessionHandlerTest extends BaseTestCase
 
         $this->assertGreaterThanOrEqual(0, $n_cycle);
 
-        //echo 'collector trigger was done after ' . $n_cycle . ' calls to collect garbage';
+        // echo 'collector trigger was done after ' . $n_cycle . ' calls to collect garbage';
     }
 }
