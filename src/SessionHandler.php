@@ -122,15 +122,16 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function read($id): string
     {
-        $this->entity = $this->model->tryLoadBy('session_id', $id);
-
-        if ($this->entity === null) {
+        try {
+            $model = clone $this->model;
+            $this->entity = $model->loadBy('session_id', $id);
+        } catch(\Throwable $t) {
             $this->entity = $this->model->createEntity();
             $this->entity->set('session_id', $id);
         }
 
         // empty string in case of null is extremely important don't remove.
-        return (string) ($this->entity->get('data') ?? '');
+        return (string) $this->entity->get('data');
     }
 
     /**
@@ -164,7 +165,17 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function validateId($id): bool
     {
-        return (clone $this->model)->addCondition('session_id', $id)->tryLoadAny() !== null;
+        try {
+            $model = clone $this->model;
+            $model->addCondition('session_id', $id);
+            $model->loadOne();
+
+            return true;
+        } catch(\Throwable $t) {
+
+        }
+
+        return false;
     }
 
     /**
@@ -181,12 +192,12 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     #[\ReturnTypeWillChange]
     public function updateTimestamp($id, $data)
     {
-        try {
-            $this->entity->set('data', $data);
-            $this->entity->set('updated_on', new DateTime());
-        } catch (\Throwable $t) {
+        if (!$this->entity->isLoaded()) {
             return false;
         }
+
+        $this->entity->set('data', $data);
+        $this->entity->set('updated_on', new DateTime());
 
         return true;
     }
