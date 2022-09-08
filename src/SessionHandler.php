@@ -45,7 +45,17 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function close(): bool
     {
-        if (!empty($this->entity->get())) {
+        if ($this->entity === null) {
+            return true;
+        }
+
+        if ($this->entity->isLoaded()) {
+            if ($this->entity->isDirty('data') || $this->entity->isDirty('updated_on')) {
+                $this->entity->save();
+            }
+        }
+
+        if (!$this->entity->isLoaded()) {
             $this->entity->save();
         }
 
@@ -124,8 +134,9 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     {
         try {
             $model = clone $this->model;
-            $this->entity = $model->loadBy('session_id', $id);
-        } catch(\Throwable $t) {
+            $model->addCondition('session_id', $id);
+            $this->entity = $model->loadOne();
+        } catch (\Throwable $t) {
             $this->entity = $this->model->createEntity();
             $this->entity->set('session_id', $id);
         }
@@ -169,13 +180,11 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
             $model = clone $this->model;
             $model->addCondition('session_id', $id);
             $model->loadOne();
-
-            return true;
-        } catch(\Throwable $t) {
-
+        } catch (\Throwable $t) {
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     /**
