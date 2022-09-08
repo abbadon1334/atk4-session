@@ -28,6 +28,7 @@ $session_options = [
 new SessionHandlerCallTracer(new SessionModel($db), $session_options);
 
 $dispatcher = simpleDispatcher(function (RouteCollector $r): void {
+
     $r->addRoute('GET', '/ini_get/{key}', function ($key): void {
         echo $key . ':' . ((int) ini_get($key)) . PHP_EOL;
     });

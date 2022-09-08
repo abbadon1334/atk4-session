@@ -201,12 +201,17 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     #[\ReturnTypeWillChange]
     public function updateTimestamp($id, $data)
     {
-        if ($this->entity === null) {
+        try {
+            $model = clone $this->model;
+            $model->addCondition('session_id', $id);
+
+            $this->entity = $model->loadOne();
+
+            $this->entity->set('data', $data);
+            $this->entity->set('updated_on', new DateTime());
+        } catch(\Throwable $t) {
             return false;
         }
-
-        $this->entity->set('data', $data);
-        $this->entity->set('updated_on', new DateTime());
 
         return true;
     }
