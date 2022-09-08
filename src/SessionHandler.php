@@ -201,7 +201,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     #[\ReturnTypeWillChange]
     public function updateTimestamp($id, $data)
     {
-        if ($this->entity === false) {
+        if ($this->entity === null) {
             return false;
         }
 
