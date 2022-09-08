@@ -18,6 +18,8 @@ use function FastRoute\simpleDispatcher;
 
 ob_start(); // output blocked
 
+sleep(1);
+
 $session_options = [
     'use_strict_mode' => 1,
     'gc_maxlifetime' => 60,
@@ -27,8 +29,9 @@ $session_options = [
 
 new SessionHandlerCallTracer(new SessionModel($db), $session_options);
 
-$dispatcher = simpleDispatcher(function (RouteCollector $r): void {
+error_log(session_id());
 
+$dispatcher = simpleDispatcher(function (RouteCollector $r): void {
     $r->addRoute('GET', '/ini_get/{key}', function ($key): void {
         echo $key . ':' . ((int) ini_get($key)) . PHP_EOL;
     });

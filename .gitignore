@@ -5,3 +5,4 @@
 /.idea
 cookie.jar
 /demos/_demo-data/db.sqlite
+/demos/db.php

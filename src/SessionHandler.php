@@ -45,17 +45,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function close(): bool
     {
-        if ($this->entity === null) {
-            return true;
-        }
-
-        if ($this->entity->isLoaded()) {
-            if ($this->entity->isDirty('data') || $this->entity->isDirty('updated_on')) {
-                $this->entity->save();
-            }
-        }
-
-        if (!$this->entity->isLoaded()) {
+        if ($this->entity !== null && !empty($this->entity->get('session_id'))) {
             $this->entity->save();
         }
 
@@ -70,7 +60,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function destroy($id): bool
     {
-        if ($this->entity->isLoaded() && $this->entity->get('session_id') === $id) {
+        if ($this->entity !== null && $this->entity->get('session_id') === $id) {
             $this->entity->delete();
             // $this->entity = $this->model->createEntity();
         }
@@ -132,17 +122,15 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
      */
     public function read($id): string
     {
-        try {
-            $model = clone $this->model;
-            $model->addCondition('session_id', $id);
-            $this->entity = $model->loadOne();
-        } catch (\Throwable $t) {
+        $this->entity = (clone $this->model)->tryLoadBy('session_id', $id);
+
+        if ($this->entity === null) {
             $this->entity = $this->model->createEntity();
             $this->entity->set('session_id', $id);
         }
 
         // empty string in case of null is extremely important don't remove.
-        return (string) $this->entity->get('data');
+        return (string) ($this->entity->get('data') ?? '');
     }
 
     /**
@@ -178,13 +166,12 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     {
         try {
             $model = clone $this->model;
-            $model->addCondition('session_id', $id);
-            $model->loadOne();
+            $model->loadBy('session_id', $id);
+
+            return true;
         } catch (\Throwable $t) {
             return false;
         }
-
-        return true;
     }
 
     /**
@@ -201,17 +188,7 @@ class SessionHandler implements SessionHandlerInterface, SessionUpdateTimestampH
     #[\ReturnTypeWillChange]
     public function updateTimestamp($id, $data)
     {
-        try {
-            $model = clone $this->model;
-            $model->addCondition('session_id', $id);
-
-            $this->entity = $model->loadOne();
-
-            $this->entity->set('data', $data);
-            $this->entity->set('updated_on', new DateTime());
-        } catch(\Throwable $t) {
-            return false;
-        }
+        $this->entity->set('updated_on', new DateTime());
 
         return true;
     }

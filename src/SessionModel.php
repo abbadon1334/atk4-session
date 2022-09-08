@@ -18,16 +18,11 @@ class SessionModel extends Model
         $this->addField('session_id', ['type' => 'string']);
 
         // N.B. must be text to store whole serialized session
-        $this->addField('data', ['type' => 'text']);
+        $this->addField('data', ['type' => 'text', 'default' => '']);
 
-        $this->addField('created_on', ['type' => 'datetime', 'system' => true]);
         $this->addField('updated_on', ['type' => 'datetime', 'system' => true]);
 
         $this->onHook(Model::HOOK_BEFORE_INSERT, function (self $m, array &$data) {
-            $data['created_on'] = new DateTime();
-        });
-
-        $this->onHook(Model::HOOK_BEFORE_UPDATE, function (self $m, array &$data) {
             $data['updated_on'] = new DateTime();
         });
     }

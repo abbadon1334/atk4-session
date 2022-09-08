@@ -57,7 +57,7 @@ class BaseTestCase extends TestCase
 
             $this->setupWebserver();
 
-            self::$jar = new FileCookieJar(self::$jar_file);
+            self::$jar = new FileCookieJar(self::$jar_file, true);
         }
     }
 
@@ -79,7 +79,7 @@ class BaseTestCase extends TestCase
         self::$_process = new Process(['php', ...$cmdArgs]);
         self::$_process->disableOutput();
         self::$_process->start();
-        usleep(250 * 1000);
+        sleep(1);
     }
 
     protected function getClient(): Client

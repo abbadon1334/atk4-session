@@ -35,6 +35,7 @@ class SessionHandlerCallTracer extends SessionHandler
     private function addCall(string $name): void
     {
         echo $name . PHP_EOL;
+        error_log($name);
         $this->executed_actions[] = $name;
     }
 
