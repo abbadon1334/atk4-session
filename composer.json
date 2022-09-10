@@ -2,7 +2,12 @@
   "name": "abbadon1334/atk4-session",
   "description": "php session using atk4 data handler",
   "license": "MIT",
-  "keywords": ["session_save_handler", "atk4", "data", "dsql"],
+  "keywords": [
+    "session_save_handler",
+    "atk4",
+    "data",
+    "dsql"
+  ],
   "authors": [
     {
       "name": "Francesco Danti",
@@ -10,12 +15,12 @@
     }
   ],
   "require": {
-    "php": ">=7.4 <8.2",
+    "php": ">=7.4 <=8.2",
     "ext-pdo": "*",
     "atk4/data": "dev-develop"
   },
   "require-release": {
-    "php": ">=7.4 <8.2",
+    "php": ">=7.4 <=8.2",
     "ext-pdo": "*",
     "atk4/data": "~3.1.0"
   },
@@ -40,14 +45,14 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Atk4\\ATK4DBSession\\Tests\\" : "tests"
+      "Atk4\\ATK4DBSession\\Tests\\": "tests"
     }
   },
   "config": {
-    "sort-packages": true,
     "allow-plugins": {
       "ergebnis/composer-normalize": true,
       "phpstan/extension-installer": true
-    }
+    },
+    "sort-packages": true
   }
 }
